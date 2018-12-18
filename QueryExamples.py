@@ -6,10 +6,9 @@ AquaMonitor.host = "http://151.157.129.195/"
 #print(list)
 gl_params = []
 
-params = AquaMonitor.Query("project_id = 86 and sample_date > 01.01.1990 and sample_date <= 31.12.2016 and parameter_id = Water;261 or parameter_id=Water;11 or parameter_id=Water").list("Parameter")
-for param in params:
-
-    print("ID:" + str(param["Id"]) + " - " + param["Name"])
+stations = AquaMonitor.Query("project_id = 86 and sample_date > 01.01.1990 and sample_date <= 31.12.2016 and datatype=Plankton").map("Stations")
+for stat in stations:
+    print(stat)
 
 
 #AquaMonitor.Query("project_id = 9566 and sample_date > 01.01.2016 and sample_date <= 31.12.2016")\

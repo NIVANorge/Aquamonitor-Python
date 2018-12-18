@@ -27,9 +27,12 @@ def login(site="AquaServices", username=None, password=None):
 
     if username is None:
         config = configparser.RawConfigParser()
-        authf = config.read(".auth")
-        username = config.get("Auth", "username")
-        password = config.get("Auth", "password")
+        try:
+            authf = config.read(".auth")
+            username = config.get("Auth", "username")
+            password = config.get("Auth", "password")
+        except Exception as ex:
+            raise Exception("Couldn't read username/password in file .auth")
 
     loginurl =  host + site + '/WebServices/LoginService.asmx/AuthenticateUser'
     loginparams = {'username':username, 'password':password}
@@ -60,10 +63,10 @@ def postJson(token, path, inJson):
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        print(response.reason)
-        if not response.text is None:
-            print(response.text)
-        return {}
+        message = "AquaMonitor failed with status: " + response.reason
+        if response.text is not None:
+            message = message + "\n" + json.loads(response.text).get("Message")
+        raise Exception(message)
 
 
 def putJson(token, path, inJson):
@@ -118,14 +121,13 @@ class Query:
 
     result = None
 
-
     def __init__(self):
         self.where = None
 
     def __init__(self, where):
         self.where = where
 
-    def list(self, table = None):
+    def map(self, table=None):
         if self.token is None:
             self.token = login()
 
@@ -134,7 +136,7 @@ class Query:
         if self.key is None:
             self.createQuery()
 
-        if not self.key is None:
+        if self.key is not None:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
                 if table is None:
@@ -142,7 +144,7 @@ class Query:
                 else:
                     return self.result["Items"]
             else:
-                print("Query ended with an error: " + self.result["ErrorMessage"])
+                raise Exception("Query ended with an error: " + self.result["ErrorMessage"])
 
     def makeArchive(self, fileformat, filename):
         if self.token is None:
@@ -174,23 +176,23 @@ class Query:
                         resp = getJson(self.token, "AquaCache/query/" + self.key + "/" + self.table)
                     self.result = resp
                 else:
-                    print("Query didn't respond properly for table request: " + self.table)
+                    raise Exception("Query didn't respond properly for table request: " + self.table)
         else:
-            print("Query didn't respond properly.")
+            raise Exception("Query didn't respond properly.")
 
     def createQuery(self):
         query = {}
 
-        if not self.table is None:
+        if self.table is not None:
             query["From"] = [{"Table":self.table}]
 
-        if not self.where is None:
+        if self.where is not None:
             query["WhereStation"] = self.where
             query["WhereData"] = self.where
 
         resp = postJson(self.token, "AquaCache/query/", query)
         if resp.get("Key") is None:
-            print("Couldn't create query. Message: " + resp.get("Message"))
+            raise Exception("Couldn't create query. Response: " + str(resp))
         else:
             self.key = resp["Key"]
 
