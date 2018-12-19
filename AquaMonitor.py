@@ -9,8 +9,8 @@ import time
 import datetime
 
 
-host = 'http://www.aquamonitor.no/'
-
+host = 'http://www.aquamonitor.no'
+aqua_site = '/AquaServices'
 
 def requestService(url, params):
     response = requests.post(url, params)
@@ -23,18 +23,19 @@ def requestService(url, params):
         raise e
 
 
-def login(site="AquaServices", username=None, password=None):
+def login(username=None, password=None):
 
     if username is None:
         config = configparser.RawConfigParser()
         try:
-            authf = config.read(".auth")
+            config.read(".auth")
             username = config.get("Auth", "username")
             password = config.get("Auth", "password")
         except Exception as ex:
             raise Exception("Couldn't read username/password in file .auth")
 
-    loginurl =  host + site + '/WebServices/LoginService.asmx/AuthenticateUser'
+    loginurl =  host + aqua_site + '/WebServices/LoginService.asmx/AuthenticateUser'
+
     loginparams = {'username':username, 'password':password}
 
     userdom = requestService(loginurl, loginparams)
@@ -90,17 +91,17 @@ def getStations(token, projectId):
 
 
 def getArchive(token, id):
-    path = 'AquaServices/files/archive/' + id
+    path = aqua_site + '/files/archive/' + id
     return getJson(token, path)
 
 
 def createDatafile(token, data):
-    path = 'AquaServices/files/datafile/'
+    path = aqua_site + '/files/datafile/'
     return postJson(token, path, data)
 
 
 def deleteArchive(token, id):
-    path = 'AquaServices/files/archive/' + id
+    path = aqua_site + '/files/archive/' + id
     return deleteJson(token, path)
 
 def downloadFile(token, url, path):
@@ -110,7 +111,7 @@ def downloadFile(token, url, path):
             fd.write(chunk)
 
 def downloadArchive(token, id, file, path):
-    downloadFile(token, "AquaServices/files/archive/" + id + '/' + file, path)
+    downloadFile(token, aqua_site + "/files/archive/" + id + '/' + file, path)
 
 
 class Query:
