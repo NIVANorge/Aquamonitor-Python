@@ -2,10 +2,11 @@ __author__ = 'Roar Brenden'
 import AquaMonitor as am
 import datetime as dt
 
-am.host = "http://151.157.129.195/"
+am.host = "http://aquamon.niva.corp/"
+am.aqua_site = "AquaCache"
 
 path = "AquaCache/query/"
-token = am.login("AquaCache")
+token = am.login()
 
 station_years = {}
 station_projects = {}
@@ -14,8 +15,8 @@ query_keys = []
 
 
 def start_query(year) :
-    where = "station_type_id=1 and datatype=Plankton and sample_date>01.01." + str(year) + " and sample_date<01.01." + str(
-            year + 1)
+    where = "station_type_id=1 and datatype=Plankton and sample_date>=01.01." + str(year) +\
+            " and sample_date<01.01." + str(year + 1)
     query = {
              "StationWhere": where,
              "From": {
@@ -53,16 +54,17 @@ def get_stations(key, year) :
 def make_file(title, filename, stids, prid) :
     expires = dt.date.today() + dt.timedelta(days=1)
 
-    where = "sample_date>01.01.1990 and sample_date<01.01.2017 and datatype=Plankton and project_id=" + str(prid)
+    where = "sample_date>01.01.1990 and sample_date<01.01.2017 and datatype=Plankton" + \
+            " and project_id=" + str(prid)
 
     data = {
         "Expires": expires.strftime('%Y.%m.%d'),
         "Title": title,
-        "Files":[{
+        "Files": [{
             "Filename": filename,
-            "ContentType":"application/vnd.ms-excel"}],
-        "Definition":{
-            "Format":"excel",
+            "ContentType": "application/vnd.ms-excel"}],
+        "Definition": {
+            "Format": "excel",
             "StationIds": stids,
             "DataWhere": where
         }
@@ -106,6 +108,9 @@ while len(project_name_count) > 0:
                 project_name_count[p]["Count"] -= 1
             del station_projects[stid]
     if len(stids) > 0:
-        print(make_file("Plankton " + project_name_count[prid]["Name"], "plankton_" + str(prid) + "_1990_2016.xlsx", stids, prid))
+        print(make_file("Plankton " + project_name_count[prid]["Name"], \
+                        "plankton_" + str(prid) + "_1990_2016.xlsx", \
+                        stids, \
+                        prid))
 
     del project_name_count[prid]

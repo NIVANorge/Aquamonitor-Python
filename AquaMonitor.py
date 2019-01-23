@@ -91,17 +91,17 @@ def getStations(token, projectId):
 
 
 def getArchive(token, id):
-    path = aqua_site + '/files/archive/' + id
+    path = 'AquaServices/files/archive/' + id
     return getJson(token, path)
 
 
 def createDatafile(token, data):
-    path = aqua_site + '/files/datafile/'
+    path = 'AquaServices/files/datafile/'
     return postJson(token, path, data)
 
 
 def deleteArchive(token, id):
-    path = aqua_site + '/files/archive/' + id
+    path = 'AquaServices/files/archive/' + id
     return deleteJson(token, path)
 
 def downloadFile(token, url, path):
@@ -111,7 +111,7 @@ def downloadFile(token, url, path):
             fd.write(chunk)
 
 def downloadArchive(token, id, file, path):
-    downloadFile(token, aqua_site + "/files/archive/" + id + '/' + file, path)
+    downloadFile(token, "AquaServices/files/archive/" + id + '/' + file, path)
 
 
 class Query:
