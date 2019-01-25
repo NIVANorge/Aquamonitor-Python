@@ -71,7 +71,7 @@ def postJson(token, path, inJson):
 
 
 def putJson(token, path, inJson):
-    response = requests.put(host + path, json = inJson, cookies=dict(aqua_key=token))
+    response = requests.put(host + path, json=inJson, cookies=dict(aqua_key=token))
     return json.loads(response.text)
 
 

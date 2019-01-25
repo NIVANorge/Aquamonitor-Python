@@ -4,7 +4,7 @@ import AquaMonitor
 import datetime
 import zipfile
 
-expires = datetime.date.today() + datetime.timedelta( days=1 )
+expires = datetime.date.today() + datetime.timedelta(days=1)
 
 def make_shapefile(title, filename, stationids, where) :
 
