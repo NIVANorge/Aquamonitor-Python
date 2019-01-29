@@ -14,8 +14,16 @@ project_name_count = {}
 query_keys = []
 
 
-def start_query(year, datatype) :
-    where = "station_type_id=1 and datatype=" + datatype + " and sample_date>=01.01." + str(year) +\
+def start_query(year, datatype):
+    """
+    Post a query definition that finds every station with data of the given datatype in a year.
+    The resulting key is appended to query_keys.
+    :param year: Year to query
+    :param datatype: Datatype to query
+    :return: Nothing
+    """
+    where = "datatype=" + datatype \
+            + " and sample_date>=01.01." + str(year) +\
             " and sample_date<01.01." + str(year + 1)
     query = {
              "WhereStation": where,
@@ -27,7 +35,17 @@ def start_query(year, datatype) :
     resp = am.postJson(token, path, query)
     query_keys.append(resp["Key"])
 
-def get_stations(key, year) :
+
+def get_stations(key, year):
+    """
+    Waits until the query for stations is finished.
+    Then iterates all stations and adds to the arrays station_years and station_projects.
+    Station_years says which year each station were sampled.
+    Station_projects says which projects the station is part of.
+    :param key: Key to the query
+    :param year: Which year the query is for
+    :return: Nothing
+    """
     ready = False
     while not ready:
         resp = am.getJson(token, path + key + "/stations/")
@@ -63,7 +81,18 @@ def get_stations(key, year) :
             project_name_count[stat["ProjectId"]] = {"Count": 0}
 
 
-def make_file(title, filename, datatype, stids, prid) :
+def make_file(title, filename, stids, datatype, prid) :
+    """
+    Creates an Excel file with the given station-ids.
+    The data are further narrowed by the datatype and project-id.
+    The time period is fixed at 1990 - 2016
+    :param title: Title to use in Eksport
+    :param filename: Filename to use in Eksport
+    :param stids: The station-ids to extract
+    :param datatype: The datatype to use in the query
+    :param prid: The project-id to use in the query
+    :return: Id of archive in Eksport
+    """
     expires = dt.date.today() + dt.timedelta(days=1)
 
     where = "sample_date>01.01.1990 and sample_date<01.01.2017 and datatype=" + datatype + \
@@ -85,6 +114,11 @@ def make_file(title, filename, datatype, stids, prid) :
     return resp["Id"]
 
 def find_next_project():
+    """
+    Returns the project with most stations.
+    Iterates project_name_count and returns the project with most highest "Count".
+    :return: Project-id
+    """
     mx = -1
     prid = -1
     for id in project_name_count.keys():
@@ -97,11 +131,13 @@ def find_next_project():
 
 datatype = "Vannplanter"
 
-for y in range(1990, 2016):
+for y in range(1990, 2017):
     start_query(y, datatype)
 
 for key in query_keys:
+    year = 1990 + query_keys.index(key)
     get_stations(key, 1990 + query_keys.index(key))
+    print("Year queried:" + str(year))
 
 for stid in station_projects.keys():
     for prid in station_projects[stid]:
@@ -118,9 +154,9 @@ while len(project_name_count) > 0:
                 project_name_count[p]["Count"] -= 1
             del station_projects[stid]
     if len(stids) > 0:
-        print(make_file(datatype + " " + str(prid),
+        print("Archive created:" + make_file(datatype + " " + str(prid),
                         datatype + "_" + str(prid) + "_1990_2016.xlsx",
-                        datatype,
                         stids,
+                        datatype,
                         prid))
     del project_name_count[prid]
