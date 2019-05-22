@@ -9,8 +9,8 @@ import time
 import datetime
 
 
-host = 'http://www.aquamonitor.no'
-aqua_site = '/AquaServices'
+host = 'http://www.aquamonitor.no/'
+aqua_site = 'AquaServices'
 
 def requestService(url, params):
     response = requests.post(url, params)
@@ -60,13 +60,17 @@ def getJson(token, path):
 
 
 def postJson(token, path, inJson):
-    response = requests.post(host + path, json = inJson, cookies=dict(aqua_key=token))
+    response = requests.post(host + path, json=inJson, cookies=dict(aqua_key=token))
     if response.status_code == 200:
         return json.loads(response.text)
     else:
         message = "AquaMonitor failed with status: " + response.reason
         if response.text is not None:
-            message = message + "\n" + json.loads(response.text).get("Message")
+            try:
+               message = message + "\n" + json.loads(response.text).get("Message")
+            except:
+                message = message + "\nDidn't send JSON."
+
         raise Exception(message)
 
 
@@ -188,8 +192,7 @@ class Query:
             query["From"] = [{"Table":self.table}]
 
         if self.where is not None:
-            query["WhereStation"] = self.where
-            query["WhereData"] = self.where
+            query["Where"] = self.where
 
         resp = postJson(self.token, "AquaCache/query/", query)
         if resp.get("Key") is None:
