@@ -3,8 +3,6 @@ __author__ = 'Roar Brenden'
 import AquaMonitor as am
 import pandas as pd
 from pandas import ExcelWriter as xlsWriter
-from pandas import ExcelFile as xlsReader
-import datetime
 import requests
 from pyproj import Proj, transform
 
@@ -21,16 +19,16 @@ projectInnsjo2019 = 12433
 am.host = "https://test-aquamonitor.niva.no/"
 
 
-def create_am_file():
+def download_am_file():
     am.Query("project_id=" + str(projectInnsjo2019))\
         .makeArchive("excel", "am1000sjoer.xlsx")\
-        .download("c:/temp/")
+        .download("c:/Innsjo2019/")
 
 
 def create_excel_file():
-    stationsFrame = pd.read_excel("c:/temp/am1000sjoer.xlsx", "Station")
+    stationsFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "Station")
 
-    writer = xlsWriter("c:/temp/1000sjoer.xlsx")
+    writer = xlsWriter("c:/Innsjo2019/1000sjoer.xlsx")
 
     outFrame = pd.DataFrame({"Station Id": stationsFrame["StationId"],
                          "Station Code": stationsFrame["StationCode"],
@@ -38,7 +36,7 @@ def create_excel_file():
                          })
     outFrame.set_index("Station Id", inplace=True)
 
-    attributeFrame = pd.read_excel("c:/temp/am1000sjoer.xlsx", "StationAttribute")
+    attributeFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "StationAttribute")
     attributeFrame.set_index("StationId", inplace=True)
 
     outFrame["River/Lake Name"] = None
@@ -46,8 +44,10 @@ def create_excel_file():
     outFrame["Kommune"] = None
     outFrame["Fylke Nr"] = None
     outFrame["Fylke"] = None
-    outFrame["NVE Vatn Nr"] = None
+    outFrame["Lake Nr"] = None
+    outFrame["NVE Nr"] = None
     outFrame["Lake Area"] = None
+    outFrame["AquaMonitor"] = None
 
     for stId, attributeRow in attributeFrame.iterrows():
         outFrame.at[stId, "River/Lake Name"] = attributeRow["Innsjønavn"]
@@ -55,14 +55,16 @@ def create_excel_file():
         outFrame.at[stId, "Kommune"] = attributeRow["Kommunenavn"]
         outFrame.at[stId, "Fylke Nr"] = attributeRow["Fylkenummer"]
         outFrame.at[stId, "Fylke"] = attributeRow["Fylke"]
-        outFrame.at[stId, "NVE Vatn Nr"] = attributeRow["Innsjønummer"]
+        outFrame.at[stId, "Lake Nr"] = attributeRow["Innsjønummer"]
+        outFrame.at[stId, "NVE Nr"] = attributeRow["NVENr"]
         outFrame.at[stId, "Lake Area"] = attributeRow["Areal"]
+        outFrame.at[stId, "AquaMonitor"] = '=HYPERLINK("http://aquamonitor.no/Innsjo2019/Map.aspx?id=' + str(stId) + '", "Se kart")'
 
     outFrame["UTM North"] = None
     outFrame["UTM East"] = None
     outFrame["UTM Zone"] = None
 
-    pointFrame = pd.read_excel("c:/temp/am1000sjoer.xlsx", "StationPoint")
+    pointFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "StationPoint")
     pointFrame.set_index("StationId", inplace=True)
 
     for stId, pointRow in pointFrame.iterrows():
@@ -80,10 +82,7 @@ def create_excel_file():
 def generate_maps():
     meta = am.Query("project_id = " + str(projectInnsjo2019)).map("Metadata")
     for m in meta:
-        for st in m["_Stations"]:
-            if st["_Project"]["_Id"] == projectInnsjo2019:
-                code = st["_Code"]
-                break
+        sid = m["_Id"]
         lon = m["_Longitude"]
         lat = m["_Latitude"]
         if lon > 24:
@@ -97,9 +96,9 @@ def generate_maps():
         x, y = transform(Proj(init="epsg:4326"), Proj(init="epsg:" + str(epsg)), lon, lat)
 
         bbox = str(x-3000) + "," + str(y-3000) + "," + str(x+3000) + "," + str(y+3000)
-        width = 500
-        height = 500
-        resp = requests.get("https://test-aquamonitor.niva.no/geoserver/wms?" +
+        width = 300
+        height = 300
+        resp = requests.get("http://www.aquamonitor.no/geoserver/wms?" +
                             "service=WMS&version=1.1.0&request=GetMap&" +
                             "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
                             "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
@@ -108,11 +107,13 @@ def generate_maps():
                             auth=("aquamonitor", "trommer"))
 
         if resp.status_code == 200:
-            with open("C:/temp/" + code + ".png", "wb") as f:
+            with open("C:/Innsjo2019/kart/" + str(sid) + ".png", "wb") as f:
                 for chunk in resp:
                     f.write(chunk)
         else:
-            print("Id:" + str(m["_Id"]) + " error code:" + str(resp.status_code))
+            print("Id:" + str(sid) + " error code:" + str(resp.status_code))
 
 
+download_am_file()
 create_excel_file()
+generate_maps()
