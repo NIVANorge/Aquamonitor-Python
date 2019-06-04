@@ -64,10 +64,10 @@ def postJson(token, path, inJson):
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        message = "AquaMonitor failed with status: " + response.reason
+        message = "AquaMonitor failed with status: " + response.reason + " and message:"
         if response.text is not None:
             try:
-               message = message + "\n" + json.loads(response.text).get("Message")
+               message = message + "\n\n" + json.loads(response.text).get("Message")
             except:
                 message = message + "\nDidn't send JSON."
 
@@ -160,8 +160,13 @@ class Query:
 
         if not self.key is None:
             self.waitQuery()
-            if self.result.get("ErroMessage") is None:
-                return Archive(fileformat, filename, token = self.token, stations = self.result["CurrentStationIds"], where = self.where)
+            if self.result.get("ErrorMessage") is None:
+                return Archive(fileformat, filename,
+                               token=self.token,
+                               stations=self.result["CurrentStationIds"],
+                               where=self.where)
+            else:
+                raise Exception("Query ended with an error: " + self.result["ErrorMessage"])
 
 
     def waitQuery(self):
