@@ -11,6 +11,10 @@ import datetime
 
 host = 'http://www.aquamonitor.no/'
 aqua_site = 'AquaServices'
+archive_site = 'AquaServices'
+cache_site = 'AquaCache'
+
+
 
 def requestService(url, params):
     response = requests.post(url, params)
@@ -95,17 +99,17 @@ def getStations(token, projectId):
 
 
 def getArchive(token, id):
-    path = 'AquaServices/files/archive/' + id
+    path = archive_site + '/files/archive/' + id
     return getJson(token, path)
 
 
 def createDatafile(token, data):
-    path = 'AquaServices/files/datafile/'
+    path = archive_site + '/files/datafile/'
     return postJson(token, path, data)
 
 
 def deleteArchive(token, id):
-    path = 'AquaServices/files/archive/' + id
+    path = archive_site + '/files/archive/' + id
     return deleteJson(token, path)
 
 def downloadFile(token, url, path):
@@ -115,7 +119,7 @@ def downloadFile(token, url, path):
             fd.write(chunk)
 
 def downloadArchive(token, id, file, path):
-    downloadFile(token, "AquaServices/files/archive/" + id + '/' + file, path)
+    downloadFile(token, archive_site + "/files/archive/" + id + '/' + file, path)
 
 
 class Query:
@@ -170,20 +174,20 @@ class Query:
 
 
     def waitQuery(self):
-        resp = getJson(self.token, "AquaCache/query/" + self.key)
+        resp = getJson(self.token, cache_site + "/query/" + self.key)
 
         if not resp.get("Result") is None:
             while not resp["Result"]["Ready"]:
                 time.sleep(1)
-                resp = getJson(self.token, "AquaCache/query/" + self.key)
+                resp = getJson(self.token, cache_site + "/query/" + self.key)
             if self.table is None:
                 self.result = resp["Result"]
             else:
-                resp = getJson(self.token, "AquaCache/query/" + self.key + "/" + self.table)
+                resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
                 if not resp.get("Ready") is None:
                     while not resp["Ready"]:
                         time.sleep(1)
-                        resp = getJson(self.token, "AquaCache/query/" + self.key + "/" + self.table)
+                        resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
                     self.result = resp
                 else:
                     raise Exception("Query didn't respond properly for table request: " + self.table)
@@ -199,7 +203,7 @@ class Query:
         if self.where is not None:
             query["Where"] = self.where
 
-        resp = postJson(self.token, "AquaCache/query/", query)
+        resp = postJson(self.token, cache_site + "/query/", query)
         if resp.get("Key") is None:
             raise Exception("Couldn't create query. Response: " + str(resp))
         else:
