@@ -36,10 +36,6 @@ def create_excel_file(outFile):
                          "Station Name": stationsFrame["StationName"]
                          })
     outFrame.set_index("Station Id", inplace=True)
-
-    attributeFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "StationAttribute")
-    attributeFrame.set_index("StationId", inplace=True)
-
     outFrame["River/Lake Name"] = None
     outFrame["Kommune Nr"] = None
     outFrame["Kommune"] = None
@@ -50,6 +46,10 @@ def create_excel_file(outFile):
     outFrame["Naturvern"] = None
     outFrame["Verneform"] = None
     outFrame["AquaMonitor"] = None
+
+    attributeFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "StationAttribute")
+    attributeFrame.set_index("StationId", inplace=True)
+
 
     for stId, attributeRow in attributeFrame.iterrows():
         outFrame.at[stId, "River/Lake Name"] = attributeRow["Innsjønavn"]
