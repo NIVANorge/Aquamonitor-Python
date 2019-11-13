@@ -58,9 +58,23 @@ def get(token, site, path):
     return requests.get(host + site + path, cookies = dict(aqua_key= token))
 
 
+def reportJsonError(response):
+    message = "AquaMonitor failed with status: " + response.reason + " and message:"
+    if response.text is not None:
+        try:
+            message = message + "\n\n" + json.loads(response.text).get("Message")
+        except:
+            message = message + "\nDidn't send JSON."
+
+    raise Exception(message)
+
+
 def getJson(token, path):
     response = requests.get(host + path, cookies = dict(aqua_key=token))
-    return json.loads(response.text)
+    if response.status_code == 200:
+        return json.loads(response.text)
+    else:
+        reportJsonError(response)
 
 
 def postJson(token, path, inJson):
@@ -68,14 +82,7 @@ def postJson(token, path, inJson):
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        message = "AquaMonitor failed with status: " + response.reason + " and message:"
-        if response.text is not None:
-            try:
-               message = message + "\n\n" + json.loads(response.text).get("Message")
-            except:
-                message = message + "\nDidn't send JSON."
-
-        raise Exception(message)
+        reportJsonError(response)
 
 
 def putJson(token, path, inJson):
