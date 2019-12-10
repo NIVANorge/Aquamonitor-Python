@@ -6,6 +6,8 @@ import requests
 
 AquaMonitor.host = "https://test-aquamonitor.niva.no/"
 AquaMonitor.aqua_site = "admin/"
+
+
 token = AquaMonitor.login()
 
 
@@ -26,16 +28,11 @@ queryGraph(token, {
 
 print("Get all samples within a single project.")
 queryGraph(token, {
-    "query": "query getSamples($name: String) {samples(projectName: $name){sampleNumber,textID,projectStationId,status,sampledDate}}",
+    "query": "query getSamples($name: String) {samples(projectName: $name){sampleNumber,textID,nivadatabaseStation{id,code,name,type{text}},status,sampledDate}}",
     "variables": {
         "name": "930-7875"
     }
 })
-
-
-print("Get station based on projectStationId")
-resp = AquaMonitor.getJson(token, AquaMonitor.aqua_site + "api/stations/55630")
-print(resp)
 
 
 print("Get the results from one sample.")
