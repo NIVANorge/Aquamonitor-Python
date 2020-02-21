@@ -3,28 +3,29 @@ import requests as req
 import json
 import pandas as pd
 from pandas import ExcelWriter as xlsWriter
-import numpy as np
-
 
 am.host = "https://test-aquamonitor.niva.no/"
 
+
 def downloadNIVA_PTI():
     # PTI -> plankton.parameter_id = 7
-    am.Query(where="Plankton.parameter_id=7")\
-       .makeArchive(fileformat="excel", filename="Plankton.xlsx")\
-       .download(path="C:/Naturindeks/")
+    am.Query(where="Plankton.parameter_id=7") \
+        .makeArchive(fileformat="excel", filename="Plankton.xlsx") \
+        .download(path="C:/Naturindeks/")
+
 
 def downloadNIVA_PIT_AIP():
     # PIT -> begroing.parameter_id = 1
     # AIP -> begroing.parameter_id = 2
 
-    am.Query(where="Begroing.parameter_id in (1,2)")\
-        .makeArchive(fileformat="excel", filename="Begroing.xlsx")\
+    am.Query(where="Begroing.parameter_id in (1,2)") \
+        .makeArchive(fileformat="excel", filename="Begroing.xlsx") \
         .download(path="C:/Naturindeks/")
 
+
 def downloadNIVA_ASPT():
-    am.Query(where="Bunndyr.parameter_id = 1")\
-        .makeArchive(fileformat="excel", filename="Bunndyr.xlsx")\
+    am.Query(where="Bunndyr.parameter_id = 1") \
+        .makeArchive(fileformat="excel", filename="Bunndyr.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
@@ -35,20 +36,21 @@ def downloadVannNett(report):
             "Page": 1,
             "HitsPerPage": 100,
             "WhereColumns": [],
-            "SelectColumns": [3553, 3554, 3555, 3556, 3557, 3558, 3560, 3562, 3564, 3566, 3568, 3570, 3572, 3574, 3576, 3577, 3578]
+            "SelectColumns": [3553, 3554, 3555, 3556, 3557, 3558, 3560, 3562, 3564, 3566, 3568, 3570, 3572, 3574, 3576,
+                              3577, 3578]
         }
         writer = xlsWriter("C:/Naturindeks/Vann-nett-elver.xlsx")
     else:
         req_data = {
-                "ReportID": 109,
-                "Page": 1,
-                "HitsPerPage": 100,
-                "WhereColumns": [],
-                "SelectColumns": [
-                    3524, 3525, 3526, 3527, 3528, 3529, 3531, 3533,
-                    3535, 3537, 3539, 3541, 3543, 3545, 3547, 3549,
-                    3550, 3551
-                ]}
+            "ReportID": 109,
+            "Page": 1,
+            "HitsPerPage": 100,
+            "WhereColumns": [],
+            "SelectColumns": [
+                3524, 3525, 3526, 3527, 3528, 3529, 3531, 3533,
+                3535, 3537, 3539, 3541, 3543, 3545, 3547, 3549,
+                3550, 3551
+            ]}
         writer = xlsWriter("C:/Naturindeks/Vann-nett-sjoer.xlsx")
 
     out_frame = pd.DataFrame(columns=["VannforekomstID", "Vannforekomstnavn", "Vanntype", "Økoregion"])
@@ -57,7 +59,6 @@ def downloadVannNett(report):
     out_frame["Vannforekomstnavn"] = None
     out_frame["Vanntype"] = None
     out_frame["Økoregion"] = None
-
 
     while True:
         resp = req.post("https://vann-nett.no/portal-api/api/ExecuteQuery", json=req_data)
@@ -79,11 +80,10 @@ def downloadVannNett(report):
     out_frame.to_excel(writer)
     writer.save()
 
+
 def rewriteNIVA_PTI():
     pti_df = pd.read_excel("c:/Naturindeks/Plankton.xlsx", "PlanktonParameter", header=1)
 
-    attribute_df = pd.read_excel("c:/Naturindeks/Plankton.xlsx", "StationAttribute")
-    
     point_df = pd.read_excel("c:/Naturindeks/Plankton.xlsx", "StationPoint")
 
     vannett_df = pd.read_excel("c:/Naturindeks/Vann-nett-sjoer.xlsx", "Sheet1")
@@ -91,34 +91,41 @@ def rewriteNIVA_PTI():
     data_rows = []
     for idx, pti_row in pti_df.iterrows():
         stationid = pti_row[2]
-        attribute_row = attribute_df.loc[attribute_df["StationId"] == stationid].iloc[0]
-        kommune = ""
-        vannforekomst = ""
-        if not attribute_row.empty:
-            kommune = "{:04.0f}".format(attribute_row["Kommunenummer"])
-            vannforekomst = attribute_row["VannforekomstID"]
+        point = point_df.loc[point_df["StationId"] == stationid].iloc[0]
+        latitude = point["Latitude"]
+        longitude = point["Longitude"]
+
+        kommune = callGeoserverQueryKommuneF(latitude, longitude)
+        vannforekomst = callGeoserverQueryVannforekomstF(latitude, longitude)
 
         okoregion = ""
         vanntype = ""
-        if not vannforekomst == "":
+        if not vannforekomst is None:
             try:
-               vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
-               if not vannett_row.empty:
-                  okoregion = vannett_row["Økoregion"]
-                  vanntype = vannett_row["Vanntype"]
+                vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
+                if not vannett_row.empty:
+                    okoregion = vannett_row["Økoregion"]
+                    vanntype = vannett_row["Vanntype"]
             except IndexError:
-                print(vannforekomst)
-        point = point_df.loc[point_df["StationId"] == stationid].iloc[0]
-        data_rows.append({"Latitude": point["Latitude"],
+                print(vannforekomst + " mangler i Vann-nett-sjoer.xlsx")
+
+        sampledate = str(pti_row[6])[0:10]
+
+        # Check for dublett on StationId / Date before appending.
+        if len([r for r in data_rows if r["Station_id"] == stationid and r["Date"] == sampledate]) == 0:
+            data_rows.append({"Latitude": point["Latitude"],
                           "Longitude": point["Longitude"],
-                          "Date": str(pti_row[6])[0:10],
-                          "PTI": pti_row[10],
+                          "Date": sampledate,
+                          "PTI": round(pti_row[10], 5),
                           "Kommunenr": kommune,
                           "VannforekomstID": vannforekomst,
                           "Økoregion": okoregion,
-                          "Vanntype": vanntype})
+                          "Vanntype": vanntype,
+                          "Station_id": stationid})
 
-    out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "PTI", "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
+    out_df = pd.DataFrame(data_rows,
+                          columns=["Latitude", "Longitude", "Date", "PTI", "Kommunenr", "VannforekomstID", "Økoregion",
+                                   "Vanntype", "Station_id"])
     writer = xlsWriter("C:/Naturindeks/Naturindeks_plankton_niva.xlsx")
     out_df.to_excel(writer)
     writer.save()
@@ -133,36 +140,38 @@ def rewriteNIVA_ASPT():
     for idx, aspt_row in aspt_df.iterrows():
         stationid = aspt_row[2]
         attribute_row = attribute_df.loc[attribute_df["StationId"] == stationid].iloc[0]
-        kommune = ""
-        vannforekomst = ""
-        if not attribute_row.empty:
-            kommune = "{:04.0f}".format(attribute_row["Kommunenummer"])
-            vannforekomst = attribute_row["VannforekomstID"]
+
         point_row = point_df.loc[point_df["StationId"] == stationid].iloc[0]
-        data_rows.append({"Latitude": point_row["Latitude"],
-                       "Longitude": point_row["Longitude"],
-                       "Date": str(aspt_row[5])[0:10],
-                       "ASPT": aspt_row[6],
-                       "Kommunenr": kommune,
-                       "VannforekomstID": vannforekomst})
+        latitude = point_row["Latitude"]
+        longitude = point_row["Longitude"]
+        kommune = callGeoserverQueryKommuneF(latitude, longitude)
+        vannforekomst = callGeoserverQueryVannforekomstF(latitude, longitude)
+
+        data_rows.append({"Latitude": latitude,
+                          "Longitude": longitude,
+                          "Date": str(aspt_row[5])[0:10],
+                          "ASPT": aspt_row[6],
+                          "Kommunenr": kommune,
+                          "VannforekomstID": vannforekomst})
 
     out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "ASPT", "Kommunenr", "VannforekomstID"])
     writer = xlsWriter("C:/Naturindeks/Naturindeks_bunndyr.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
+
 def callVannmiljoLokalitet(code):
     url = "https://kart.miljodirektoratet.no/arcgis/rest/services/vannmiljo/MapServer/1/query"
     params = {
-                "where": "WaterLocationCode='" + code + "'",
-                "outFields": "SourceID",
-                "returnGeometry": True,
-                "outSR": 4326,
-                "f": "pjson"
+        "where": "WaterLocationCode='" + code + "'",
+        "outFields": "SourceID",
+        "returnGeometry": True,
+        "outSR": 4326,
+        "f": "pjson"
     }
     try:
-       resp = req.post(url, params)
-       features = json.loads(resp.text)["features"]
+        resp = req.post(url, params)
+        features = json.loads(resp.text)["features"]
     except Exception as ex:
         print(ex)
         features = []
@@ -175,7 +184,7 @@ def callVannmiljoLokalitet(code):
 
 def callGeoserverQueryVannforekomstF(latitude, longitude):
     url = "http://www.aquamonitor.no/geoserver/rest/query/no.niva/nve_vannforekomst_f/distance/4326_" \
-            + str(latitude) + "_" + str(longitude) + "_0.01/features.json"
+          + str(latitude) + "_" + str(longitude) + "_100/features.json"
     resp = req.get(url)
     features = json.loads(resp.text)["features"]
     if len(features) == 1:
@@ -183,31 +192,36 @@ def callGeoserverQueryVannforekomstF(latitude, longitude):
     else:
         return None
 
+
 def callGeoserverQueryKommuneF(latitude, longitude):
-    url = "http://www.aquamonitor.no/geoserver/rest/query/no.niva/n250_komm_f/distance/4326_" \
+    url = "https://test-aquamonitor.niva.no/geoserver/rest/query/no.niva/ni_kommune_f/distance/4326_" \
           + str(latitude) + "_" + str(longitude) + "_0.01/features.json"
     resp = req.get(url)
     features = json.loads(resp.text)["features"]
     if len(features) == 1:
-        return features[0]["komm"]
+        return features[0]["KOMM"]
     else:
         return None
 
+
 def issueVannmiljoPPTIDownloadfile():
-    url = "https://vannmiljo.miljodirektoratet.no/ExportRegistrations"
+    url = "https://vannmiljowebapi.miljodirektoratet.no/api/Vannmiljo/ExportRegistrations"
     params = {
         "ParametersIDs": ["PPTI"],
         "ExportEmail": "roar.branden@niva.no",
         "ExportType": "redigering",
         "RegType": 1
     }
-    req.post(url, params)
+    resp = req.post(url, params)
+    if resp.status_code != 200:
+        print(resp.text)
+
 
 def rewriteVannmiljo_PTI():
     vannmiljo_df = pd.read_excel("C:/Naturindeks/ppti/VannmiljoEksport_vannreg.xlsx", "VannmiljoEksport")
     vannett_df = pd.read_excel("c:/Naturindeks/Vann-nett-sjoer.xlsx", "Sheet1")
     data_rows = []
-    for idx,vannmiljo_row in vannmiljo_df.iterrows():
+    for idx, vannmiljo_row in vannmiljo_df.iterrows():
         vannlok = callVannmiljoLokalitet(vannmiljo_row["Vannlok_kode"])
         if vannlok is not None:
             latitude = vannlok["geometry"]["y"]
@@ -218,12 +232,12 @@ def rewriteVannmiljo_PTI():
             vanntype = ""
             if vannforekomst is not None:
                 try:
-                   vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
-                   if not vannett_row.empty:
-                      okoregion = vannett_row["Økoregion"]
-                      vanntype = vannett_row["Vanntype"]
+                    vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
+                    if not vannett_row.empty:
+                        okoregion = vannett_row["Økoregion"]
+                        vanntype = vannett_row["Vanntype"]
                 except IndexError:
-                    print(vannforekomst)
+                    print(vannforekomst + " mangler i Vann-nett-sjoer.xlsx.")
 
             stationId = ""
             sourceId = str(vannlok["attributes"]["SourceID"])
@@ -244,7 +258,7 @@ def rewriteVannmiljo_PTI():
                 "Longitude": longitude,
                 "Date": date,
                 "PTI": float(vannmiljo_row["Verdi"].replace(",", ".")),
-                "Kommune": kommune,
+                "Kommunenr": kommune,
                 "VannforekomstID": vannforekomst,
                 "Økoregion": okoregion,
                 "Vanntype": vanntype,
@@ -253,11 +267,59 @@ def rewriteVannmiljo_PTI():
             })
 
     out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "PTI",
-                                              "Kommune", "VannforekomstID", "Økoregion", "Vanntype",
+                                              "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype",
                                               "Plankton_parameter_values_id", "Station_id"])
     writer = xlsWriter("C:/Naturindeks/Naturindeks_plankton_vannmiljo.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
+def mergePTI():
+    vannmiljo_df = pd.read_excel("C:/Naturindeks/Naturindeks_plankton_vannmiljo.xlsx")
+    niva_df = pd.read_excel("C:/Naturindeks/Naturindeks_plankton_niva.xlsx")
 
+    for idx, niva_row in niva_df.iterrows():
+        match_df = vannmiljo_df[(vannmiljo_df["Station_id"] == niva_row["Station_id"]) & (vannmiljo_df["Date"] == niva_row["Date"])]
+        if len(match_df) == 0:
+            vannmiljo_df = vannmiljo_df.append(niva_row)
+        else:
+            for idx2, match_row in match_df.iterrows():
+                if not match_row["PTI"] == niva_row["PTI"]:
+                    print("Sjekk stasjon:" + str(match_row["Station_id"]) + " på dato:" + match_row["Date"] + " og med id:" + str(match_row["Plankton_parameter_values_id"]))
 
+    out_df = pd.DataFrame(vannmiljo_df, columns=["Latitude", "Longitude", "Date", "PTI",
+                                              "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
+    writer = xlsWriter("C:/Naturindeks/Naturindeks_plankton.xlsx")
+    out_df.to_excel(writer)
+    writer.save()
+
+def rewriteKommuneVannforekomst():
+    kommuneVannforekomst_df = pd.read_excel("C:/Naturindeks/Kommune_vannforekomst_f.xlsx",
+                                            "Kommune")  # Fila kommune_vannforekomst_f kommer fra en spatial join operasjon i QGIS(??).
+    vannett_df = pd.read_excel("c:/Naturindeks/Vann-nett-sjoer.xlsx", "Sheet1")
+    data_rows = []
+
+    for idx, kommuneVannforekomst_row in kommuneVannforekomst_df.iterrows():
+        vannforekomst = kommuneVannforekomst_row["VannforekomstId"]
+        kommune = kommuneVannforekomst_row["Kommunenr"]
+        okoregion = ""
+        vanntype = ""
+        if vannforekomst is not None:
+            try:
+                vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
+                if not vannett_row.empty:
+                    okoregion = vannett_row["Økoregion"]
+                    vanntype = vannett_row["Vanntype"]
+            except IndexError:
+                print(vannforekomst + " mangler i Vann-nett-sjoer.xlsx.")
+
+        data_rows.append({
+            "Kommunenr": kommune,
+            "VannforekomstID": vannforekomst,
+            "Økoregion": okoregion,
+            "Vanntype": vanntype
+        })
+
+    out_df = pd.DataFrame(data_rows, columns=["Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
+    writer = xlsWriter("C:/Naturindeks/Naturindeks_kommune_innsjo.xlsx")
+    out_df.to_excel(writer)
+    writer.save()
