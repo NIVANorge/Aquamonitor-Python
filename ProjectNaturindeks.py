@@ -10,7 +10,7 @@ am.host = "https://test-aquamonitor.niva.no/"
 def downloadNIVA_PTI():
     # PTI -> plankton.parameter_id = 7
     am.Query(where="Plankton.parameter_id=7") \
-        .makeArchive(fileformat="excel", filename="Plankton.xlsx") \
+        .makeArchive(fileformat="excel", filename="Nivabase-plankton.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
@@ -19,13 +19,13 @@ def downloadNIVA_PIT_AIP():
     # AIP -> begroing.parameter_id = 2
 
     am.Query(where="Begroing.parameter_id in (1,2)") \
-        .makeArchive(fileformat="excel", filename="Begroing.xlsx") \
+        .makeArchive(fileformat="excel", filename="Nivabase-begroing.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
 def downloadNIVA_ASPT():
     am.Query(where="Bunndyr.parameter_id = 1") \
-        .makeArchive(fileformat="excel", filename="Bunndyr.xlsx") \
+        .makeArchive(fileformat="excel", filename="Nivabase-bunndyr.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
@@ -82,9 +82,9 @@ def downloadVannNett(report):
 
 
 def rewriteNIVA_PTI():
-    pti_df = pd.read_excel("c:/Naturindeks/Plankton.xlsx", "PlanktonParameter", header=1)
+    pti_df = pd.read_excel("c:/Naturindeks/Nivabase-plankton.xlsx", "PlanktonParameter", header=1)
 
-    point_df = pd.read_excel("c:/Naturindeks/Plankton.xlsx", "StationPoint")
+    point_df = pd.read_excel("c:/Naturindeks/Nivabase-plankton.xlsx", "StationPoint")
 
     vannett_df = pd.read_excel("c:/Naturindeks/Vann-nett-sjoer.xlsx", "Sheet1")
 
@@ -126,15 +126,15 @@ def rewriteNIVA_PTI():
     out_df = pd.DataFrame(data_rows,
                           columns=["Latitude", "Longitude", "Date", "PTI", "Kommunenr", "VannforekomstID", "Økoregion",
                                    "Vanntype", "Station_id"])
-    writer = xlsWriter("C:/Naturindeks/Naturindeks_plankton_niva.xlsx")
+    writer = xlsWriter("C:/Naturindeks/Plankton-niva.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
 
 def rewriteNIVA_ASPT():
-    aspt_df = pd.read_excel("c:/Naturindeks/Bunndyr.xlsx", "BunndyrVariables")
-    attribute_df = pd.read_excel("c:/Naturindeks/Bunndyr.xlsx", "StationAttribute")
-    point_df = pd.read_excel("c:/Naturindeks/Bunndyr.xlsx", "StationPoint")
+    aspt_df = pd.read_excel("c:/Naturindeks/Nivabase-bunndyr.xlsx", "BunndyrVariables")
+    attribute_df = pd.read_excel("c:/Naturindeks/Nivabase-bunndyr.xlsx", "StationAttribute")
+    point_df = pd.read_excel("c:/Naturindeks/Nivabase-bunndyr.xlsx", "StationPoint")
 
     data_rows = []
     for idx, aspt_row in aspt_df.iterrows():
@@ -155,7 +155,7 @@ def rewriteNIVA_ASPT():
                           "VannforekomstID": vannforekomst})
 
     out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "ASPT", "Kommunenr", "VannforekomstID"])
-    writer = xlsWriter("C:/Naturindeks/Naturindeks_bunndyr.xlsx")
+    writer = xlsWriter("C:/Naturindeks/Bunndyr.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
@@ -269,13 +269,13 @@ def rewriteVannmiljo_PTI():
     out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "PTI",
                                               "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype",
                                               "Plankton_parameter_values_id", "Station_id"])
-    writer = xlsWriter("C:/Naturindeks/Naturindeks_plankton_vannmiljo.xlsx")
+    writer = xlsWriter("C:/Naturindeks/Plankton-vannmiljo.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
 def mergePTI():
-    vannmiljo_df = pd.read_excel("C:/Naturindeks/Naturindeks_plankton_vannmiljo.xlsx")
-    niva_df = pd.read_excel("C:/Naturindeks/Naturindeks_plankton_niva.xlsx")
+    vannmiljo_df = pd.read_excel("C:/Naturindeks/Plankton-vannmiljo.xlsx")
+    niva_df = pd.read_excel("C:/Naturindeks/Plankton-niva.xlsx")
 
     for idx, niva_row in niva_df.iterrows():
         match_df = vannmiljo_df[(vannmiljo_df["Station_id"] == niva_row["Station_id"]) & (vannmiljo_df["Date"] == niva_row["Date"])]
@@ -288,7 +288,7 @@ def mergePTI():
 
     out_df = pd.DataFrame(vannmiljo_df, columns=["Latitude", "Longitude", "Date", "PTI",
                                               "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
-    writer = xlsWriter("C:/Naturindeks/Naturindeks_plankton.xlsx")
+    writer = xlsWriter("C:/Naturindeks/Naturindeks-plankton-PTI.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
@@ -320,6 +320,6 @@ def rewriteKommuneVannforekomst():
         })
 
     out_df = pd.DataFrame(data_rows, columns=["Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
-    writer = xlsWriter("C:/Naturindeks/Naturindeks_kommune_innsjo.xlsx")
+    writer = xlsWriter("C:/Naturindeks/Naturindeks-innsjo.xlsx")
     out_df.to_excel(writer)
     writer.save()
