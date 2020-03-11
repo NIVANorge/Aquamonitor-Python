@@ -54,12 +54,13 @@ def downloadVannNett(report):
             ]}
         writer = xlsWriter("C:/Naturindeks/Vann-nett-sjoer.xlsx")
 
-    out_frame = pd.DataFrame(columns=["VannforekomstID", "Vannforekomstnavn", "Vanntype", "Økoregion"])
+    out_frame = pd.DataFrame(columns=["VannforekomstID", "Vannforekomstnavn", "Vanntype", "Økoregion", "Interkalibreringstype"])
     out_frame.set_index("VannforekomstID", inplace=True)
 
     out_frame["Vannforekomstnavn"] = None
     out_frame["Vanntype"] = None
     out_frame["Økoregion"] = None
+    out_frame["Interkalibreringstype"] = None
 
     while True:
         resp = req.post("https://vann-nett.no/portal-api/api/ExecuteQuery", json=req_data)
@@ -71,6 +72,7 @@ def downloadVannNett(report):
             out_frame.at[vannforekomstid, "Vannforekomstnavn"] = vannf["Vannforekomstnavn"]
             out_frame.at[vannforekomstid, "Vanntype"] = vannf["Vanntype"]
             out_frame.at[vannforekomstid, "Økoregion"] = vannf["Økoregion"]
+            out_frame.at[vannforekomstid, "Interkalibreringstype"] = vannf["Interkalibreringstype"]
 
         print("Page: " + str(resp_data["Page"]) + " av " + str(resp_data["PageCount"]))
         if resp_data["Page"] == resp_data["PageCount"]:
@@ -101,12 +103,14 @@ def rewriteNIVA_PTI():
 
         okoregion = ""
         vanntype = ""
+        interkalibrering = ""
         if not vannforekomst is None:
             try:
                 vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
                 if not vannett_row.empty:
                     okoregion = vannett_row["Økoregion"]
                     vanntype = vannett_row["Vanntype"]
+                    interkalibrering = vannett_row["Interkalibreringstype"]
             except IndexError:
                 print(vannforekomst + " mangler i Vann-nett-sjoer.xlsx")
 
@@ -122,11 +126,13 @@ def rewriteNIVA_PTI():
                           "VannforekomstID": vannforekomst,
                           "Økoregion": okoregion,
                           "Vanntype": vanntype,
+                          "Interkalibreringstype": interkalibrering,
                           "Station_id": stationid})
 
     out_df = pd.DataFrame(data_rows,
-                          columns=["Latitude", "Longitude", "Date", "PTI", "Kommunenr", "VannforekomstID", "Økoregion",
-                                   "Vanntype", "Station_id"])
+                          columns=["Latitude", "Longitude", "Date", "PTI", "Kommunenr",
+                                   "VannforekomstID", "Økoregion",
+                                   "Vanntype", "Interkalibreringstype", "Station_id"])
     writer = xlsWriter("C:/Naturindeks/Plankton-niva.xlsx")
     out_df.to_excel(writer)
     writer.save()
@@ -289,16 +295,18 @@ def rewriteVannmiljo_PTI():
         if vannlok is not None:
             latitude = vannlok["geometry"]["y"]
             longitude = vannlok["geometry"]["x"]
-            vannforekomst = callGeoserverQueryVannforekomst("nave_vannforekomst_f", latitude, longitude)
+            vannforekomst = callGeoserverQueryVannforekomst("nve_vannforekomst_f", latitude, longitude)
             kommune = callGeoserverQueryKommuneF(latitude, longitude)
             okoregion = ""
             vanntype = ""
+            interkalibrering = ""
             if vannforekomst is not None:
                 try:
                     vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
                     if not vannett_row.empty:
                         okoregion = vannett_row["Økoregion"]
                         vanntype = vannett_row["Vanntype"]
+                        interkalibrering = vannett_row["Interkalibreringstype"]
                 except IndexError:
                     print(vannforekomst + " mangler i Vann-nett-sjoer.xlsx.")
 
@@ -325,12 +333,14 @@ def rewriteVannmiljo_PTI():
                 "VannforekomstID": vannforekomst,
                 "Økoregion": okoregion,
                 "Vanntype": vanntype,
+                "Interkalibreringstype": interkalibrering,
                 "Plankton_parameter_values_id": planktonId,
                 "Station_id": stationId
             })
 
     out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "PTI",
-                                              "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype",
+                                              "Kommunenr", "VannforekomstID", "Økoregion",
+                                              "Vanntype", "Interkalibreringstype",
                                               "Plankton_parameter_values_id", "Station_id"])
     writer = xlsWriter("C:/Naturindeks/Plankton-vannmiljo.xlsx")
     out_df.to_excel(writer)
@@ -409,7 +419,9 @@ def mergePlankton():
                     print("Sjekk stasjon:" + str(match_row["Station_id"]) + " på dato:" + match_row["Date"] + " og med id:" + str(match_row["Plankton_parameter_values_id"]))
 
     out_df = pd.DataFrame(vannmiljo_df, columns=["Latitude", "Longitude", "Date", "PTI",
-                                              "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
+                                              "Kommunenr", "VannforekomstID", "Økoregion",
+                                              "Vanntype", "Interkalibreringstype"])
+
     writer = xlsWriter("C:/Naturindeks/Naturindeks-plankton-PTI.xlsx")
     out_df.to_excel(writer)
     writer.save()
