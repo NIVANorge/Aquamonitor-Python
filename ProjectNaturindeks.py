@@ -54,13 +54,14 @@ def downloadVannNett(report):
             ]}
         writer = xlsWriter("C:/Naturindeks/Vann-nett-sjoer.xlsx")
 
-    out_frame = pd.DataFrame(columns=["VannforekomstID", "Vannforekomstnavn", "Vanntype", "Økoregion", "Interkalibreringstype"])
+    out_frame = pd.DataFrame(columns=["VannforekomstID", "Vannforekomstnavn", "Vanntype", "Økoregion", "Interkalibreringstype", "Nasjonal vanntype"])
     out_frame.set_index("VannforekomstID", inplace=True)
 
     out_frame["Vannforekomstnavn"] = None
     out_frame["Vanntype"] = None
     out_frame["Økoregion"] = None
     out_frame["Interkalibreringstype"] = None
+    out_frame["Nasjonal vanntype"] = None
 
     while True:
         resp = req.post("https://vann-nett.no/portal-api/api/ExecuteQuery", json=req_data)
@@ -73,6 +74,7 @@ def downloadVannNett(report):
             out_frame.at[vannforekomstid, "Vanntype"] = vannf["Vanntype"]
             out_frame.at[vannforekomstid, "Økoregion"] = vannf["Økoregion"]
             out_frame.at[vannforekomstid, "Interkalibreringstype"] = vannf["Interkalibreringstype"]
+            out_frame.at[vannforekomstid, "Nasjonal vanntype"] = vannf["Nasjonal vanntype"]
 
         print("Page: " + str(resp_data["Page"]) + " av " + str(resp_data["PageCount"]))
         if resp_data["Page"] == resp_data["PageCount"]:
@@ -157,12 +159,14 @@ def rewriteNIVA_Begroing():
 
         okoregion = ""
         vanntype = ""
+        nasj_vanntype = ""
         if not vannforekomst is None:
             try:
                 vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
                 if not vannett_row.empty:
                     okoregion = vannett_row["Økoregion"]
                     vanntype = vannett_row["Vanntype"]
+                    nasj_vanntype = vannett_row["Nasjonal vanntype"]
             except IndexError:
                 print(vannforekomst + " mangler i Vann-nett-elver.xlsx")
 
@@ -180,11 +184,12 @@ def rewriteNIVA_Begroing():
                           "VannforekomstID": vannforekomst,
                           "Økoregion": okoregion,
                           "Vanntype": vanntype,
+                          "EQR_Type": nasj_vanntype,
                           "Station_id": stationid})
 
     out_df = pd.DataFrame(data_rows,
                           columns=["Latitude", "Longitude", "Date", "PIT", "AIP", "HBI2", "Kommunenr",
-                                   "VannforekomstID", "Økoregion", "Vanntype", "Station_id"])
+                                   "VannforekomstID", "Økoregion", "Vanntype", "EQR_Type", "Station_id"])
 
     writer = xlsWriter("C:/Naturindeks/Begroing-niva.xlsx")
     out_df.to_excel(writer)
@@ -360,19 +365,24 @@ def rewriteVannmiljo_Begroing():
             kommune = callGeoserverQueryKommuneF(latitude, longitude)
             okoregion = ""
             vanntype = ""
+            nasj_vanntype = ""
             if vannforekomst is not None:
                 try:
                     vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
                     if not vannett_row.empty:
                         okoregion = vannett_row["Økoregion"]
                         vanntype = vannett_row["Vanntype"]
+                        nasj_vanntype = vannett_row["Nasjonal vanntype"]
                 except IndexError:
                     print(vannforekomst + " mangler i Vann-nett-elver.xlsx.")
 
             stationId = ""
             sourceId = str(vannlok["attributes"]["SourceID"])
             if len(sourceId) > 5 and sourceId[:5] == "NIVA@":
-                stationId = int(sourceId[5:])
+                try:
+                     stationId = int(sourceId[5:])
+                except:
+                    print(sourceId + " seems to be from NIVA, but isn't correct.")
 
             nivabaseId = ""
             lokalId = str(vannmiljo_row["ID_lokal"])
@@ -393,13 +403,14 @@ def rewriteVannmiljo_Begroing():
                 "VannforekomstID": vannforekomst,
                 "Økoregion": okoregion,
                 "Vanntype": vanntype,
+                "EQR_Type": nasj_vanntype,
                 "Begalg_parameter_values_id": nivabaseId,
                 "Station_id": stationId
             })
 
     out_df = pd.DataFrame(data_rows, columns=["Latitude", "Longitude", "Date", "Parameter", "Verdi",
                                               "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype",
-                                              "Begalg_parameter_values_id", "Station_id"])
+                                              "EQR_Type", "Begalg_parameter_values_id", "Station_id"])
 
     writer = xlsWriter("C:/Naturindeks/Vannmiljo-Begroing.xlsx")
     out_df.to_excel(writer)
@@ -457,6 +468,7 @@ def mergeBegroing():
                     "VannforekomstID": vannmiljo_row["VannforekomstID"],
                     "Økoregion": vannmiljo_row["Økoregion"],
                     "Vanntype": vannmiljo_row["Vanntype"],
+                    "EQR_Type": vannmiljo_row["EQR_Type"],
                     "Station_id": vannmiljo_row["Station_id"]
                 }, ignore_index=True)
             else:
@@ -465,9 +477,11 @@ def mergeBegroing():
                         match_row[parameter] = vannmiljo_row["Verdi"]
                     else:
                         if not match_row[parameter] == vannmiljo_row["Verdi"]:
-                            print("Sjekk parameter:" + parameter + " på stasjon:" + match_row["Station_id"]) +\
-                              " på dato:" + match_row["Date"]
-
+                            try:
+                                print("Sjekk parameter:" + parameter + " på stasjon:" + str(match_row["Station_id"])) +\
+                                    " på dato:" + str(match_row["Date"])
+                            except:
+                                print("Huff")
         else:
             match_df = niva_df[(niva_df["Latitude"] == vannmiljo_row["Latitude"])
                                & (niva_df["Longitude"] == vannmiljo_df["Longitude"])
@@ -484,6 +498,7 @@ def mergeBegroing():
                     "VannforekomstID": vannmiljo_row["VannforekomstID"],
                     "Økoregion": vannmiljo_row["Økoregion"],
                     "Vanntype": vannmiljo_row["Vanntype"],
+                    "EQR_Type": vannmiljo_row["EQR_Type"],
                     "Station_id": vannmiljo_row["Station_id"]
                 }, ignore_index=True)
             else:
@@ -492,7 +507,7 @@ def mergeBegroing():
                         match_row[parameter] = vannmiljo_row["Verdi"]
 
     out_df = pd.DataFrame(niva_df, columns=["Latitude", "Longitude", "Date", "PIT", "AIP", "HBI2",
-                                              "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype"])
+                                              "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype", "EQR_Type"])
 
     writer = xlsWriter("C:/Naturindeks/Naturindeks-begroing.xlsx")
     out_df.to_excel(writer)
