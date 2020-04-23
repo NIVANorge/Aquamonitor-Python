@@ -43,3 +43,12 @@ queryGraph(token, {
         "nr": 102689
     }
 })
+
+
+print("Check status of Feltfo.")
+queryGraph(token, {
+    "query": "query getProjects($nr: String) {projects(projectNr: $nr){name,samples{sampleNumber,status,nivadatabaseStation{code},sampledDate}}}",
+    "variables": {
+        "nr": "17127;1:FELT"
+    }
+})
