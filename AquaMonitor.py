@@ -8,12 +8,10 @@ import pyexpat
 import time
 import datetime
 
-
 host = 'http://www.aquamonitor.no/'
 aqua_site = 'AquaServices'
 archive_site = 'AquaServices'
 cache_site = 'AquaCache'
-
 
 
 def requestService(url, params):
@@ -28,7 +26,6 @@ def requestService(url, params):
 
 
 def login(username=None, password=None):
-
     if username is None:
         config = configparser.RawConfigParser()
         try:
@@ -38,9 +35,9 @@ def login(username=None, password=None):
         except Exception as ex:
             raise Exception("Couldn't read username/password in file .auth")
 
-    loginurl =  host + aqua_site + '/WebServices/LoginService.asmx/AuthenticateUser'
+    loginurl = host + aqua_site + '/WebServices/LoginService.asmx/AuthenticateUser'
 
-    loginparams = {'username':username, 'password':password}
+    loginparams = {'username': username, 'password': password}
 
     userdom = requestService(loginurl, loginparams)
 
@@ -54,8 +51,8 @@ def login(username=None, password=None):
     return token
 
 
-def get(token, site, path):
-    return requests.get(host + site + path, cookies = dict(aqua_key= token))
+def get(token: str, site: str, path: str, stream: bool = False):
+    return requests.get(host + site + path, cookies=dict(aqua_key=token), stream=stream)
 
 
 def reportJsonError(response):
@@ -70,7 +67,7 @@ def reportJsonError(response):
 
 
 def getJson(token, path):
-    response = requests.get(host + path, cookies = dict(aqua_key=token))
+    response = requests.get(host + path, cookies=dict(aqua_key=token))
     if response.status_code == 200:
         return json.loads(response.text)
     else:
@@ -96,7 +93,7 @@ def deleteJson(token, path):
 
 
 def getProject(token, projectId):
-    projectsurl = 'AquaServices/api/projects/'+ str(projectId)
+    projectsurl = 'AquaServices/api/projects/' + str(projectId)
     return getJson(token, projectsurl)
 
 
@@ -119,18 +116,19 @@ def deleteArchive(token, id):
     path = archive_site + '/files/archive/' + id
     return deleteJson(token, path)
 
-def downloadFile(token, url, path):
+
+def downloadFile(token: str, url: str, path: str) -> None:
     resp = get(token, "", url)
     with open(path, 'wb') as fd:
         for chunk in resp.iter_content(chunk_size=256):
             fd.write(chunk)
+
 
 def downloadArchive(token, id, file, path):
     downloadFile(token, archive_site + "/files/archive/" + id + '/' + file, path)
 
 
 class Query:
-
     token = None
     key = None
     table = None
@@ -179,7 +177,6 @@ class Query:
             else:
                 raise Exception("Query ended with an error: " + self.result["ErrorMessage"])
 
-
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
 
@@ -205,7 +202,7 @@ class Query:
         query = {}
 
         if self.table is not None:
-            query["From"] = [{"Table":self.table}]
+            query["From"] = [{"Table": self.table}]
 
         if self.where is not None:
             query["Where"] = self.where
@@ -218,11 +215,9 @@ class Query:
 
 
 class Archive:
-
     id = None
     expires = None
     token = None
-
 
     def __init__(self, *args, **kwargs):
         if args.__len__() == 1:
@@ -249,7 +244,6 @@ class Archive:
                 downloadArchive(self.token, self.id, file["FileName"], path + file["FileName"])
         else:
             print("Couldn't create archive.")
-
 
     def createArchive(self):
         if self.expires is None:
@@ -280,3 +274,23 @@ class Archive:
         resp = createDatafile(self.token, archive)
         if not resp.get("Id") is None:
             self.id = resp["Id"]
+
+class Graph:
+    token = None
+    site = None
+    url = None
+
+    def __init__(self, width : int, height : int, **kwargs):
+        self.token = kwargs.get("token")
+        self.site = kwargs.get("site")
+
+        self.url = kwargs.get("graph") + "?w=" + str(width) + "&h=" + str(height) \
+        + "&stid=" + str(kwargs.get("stationId")) + "&p=" + kwargs.get("parameter") \
+        + "&where=" + kwargs.get("where")
+
+    def download(self, path: str):
+        response = get(self.token, self.site, self.url, stream=True)
+        if response.status_code == 200:
+            with open(path, 'wb') as file:
+                for chunk in response.iter_content():
+                    file.write(chunk)

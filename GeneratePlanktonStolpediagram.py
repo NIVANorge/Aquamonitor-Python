@@ -1,20 +1,19 @@
 __author__ = 'Roar Brenden'
 
-
-import AquaMonitor
-
-token = AquaMonitor.login()
-
+import AquaMonitor as am
+am.host = "https://test-aquamonitor.niva.no/"
+token = am.login()
 site = "mjosovervak"
-
+where = "project_id=1098 and sample_date>01.01.2018 and sample_date<=31.12.2018 and Plankton.parameter_id=2"
 width = 650
 height = 300
-year = 2015
-stationId = 31342
-path = "/Graph/Stolpediagram.ashx?w=" + str(width) + "&h=" + str(height) + "&stid=" + str(stationId) + "&p=Plankton;2&ses=" + str(year)
+root = "C:/temp/"
 
-root = "/users/roar/"
-resp = AquaMonitor.get(token, site, path)
-file = root + "plankton_" + str(stationId) + ".png"
-
-AquaMonitor.downloadFile(token, site + path, file)
+for stationId in am.Query(
+        where=where). \
+        map():
+    file = root + "plankton_" + str(stationId) + ".png"
+    am.Graph(width, height, token=token, site=site, graph='/Graph/Stolpediagram.ashx', stationId=stationId,
+             parameter='Plankton;2',
+             where=where)\
+        .download(file)
