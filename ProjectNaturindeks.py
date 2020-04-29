@@ -53,6 +53,7 @@ def downloadVannNett(report):
                 3550, 3551
             ]}
         writer = xlsWriter("C:/Naturindeks/Vann-nett-sjoer.xlsx")
+        konv_vanntype_df = pd.read_excel("C:/Naturindeks/Konvertering_vanntyper.xlsx", "Innsjø")
 
     out_frame = pd.DataFrame(columns=["VannforekomstID", "Vannforekomstnavn", "Vanntype", "Økoregion", "Interkalibreringstype", "Nasjonal vanntype"])
     out_frame.set_index("VannforekomstID", inplace=True)
@@ -73,7 +74,20 @@ def downloadVannNett(report):
             out_frame.at[vannforekomstid, "Vannforekomstnavn"] = vannf["Vannforekomstnavn"]
             out_frame.at[vannforekomstid, "Vanntype"] = vannf["Vanntype"]
             out_frame.at[vannforekomstid, "Økoregion"] = vannf["Økoregion"]
-            out_frame.at[vannforekomstid, "Interkalibreringstype"] = vannf["Interkalibreringstype"]
+            if konv_vanntype_df is None:
+                interkalibrering = vannf["Interkalibreringstype"]
+            else:
+                rows = konv_vanntype_df.loc[konv_vanntype_df["TypeCode"] == vannf["Vanntype"]]
+                if rows.empty:
+                    interkalibrering = vannf["Interkalibreringstype"]
+                else:
+                    interkalibrering = rows.iloc[0]["IntercalibrationTypeID"]
+                    print("Konvertering:" + interkalibrering)
+                    if interkalibrering == "Not applicable":
+                        interkalibrering = vannf["Interkalibreringstype"]
+
+
+            out_frame.at[vannforekomstid, "Interkalibreringstype"] = interkalibrering
             out_frame.at[vannforekomstid, "Nasjonal vanntype"] = vannf["Nasjonal vanntype"]
 
         print("Page: " + str(resp_data["Page"]) + " av " + str(resp_data["PageCount"]))
