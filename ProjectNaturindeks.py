@@ -41,6 +41,7 @@ def downloadVannNett(report):
                               3577, 3578]
         }
         writer = xlsWriter("C:/Naturindeks/Vann-nett-elver.xlsx")
+        konv_vanntype_df = pd.read_excel("C:/Naturindeks/Konvertering_vanntyper.xlsx", "Elv")
     else:
         req_data = {
             "ReportID": 109,
