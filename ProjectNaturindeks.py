@@ -877,7 +877,7 @@ def mergeBlotbunn():
             isi = vannmiljo_row["Verdi"]
             field = "ISI"
 
-        if vannmiljo_row["Station_id"] is not None:
+        if not pd.isna(vannmiljo_row["Station_id"]):
             match_df = niva_df[(niva_df["Station_id"] == vannmiljo_row["Station_id"])
                                & (niva_df["Date"] == vannmiljo_row["Date"])
                                & (niva_df["Grabb"] == vannmiljo_row["Grabb"])]
@@ -901,18 +901,16 @@ def mergeBlotbunn():
                 }, ignore_index=True)
             else:
                 for idx2, match_row in match_df.iterrows():
-                    if match_row[field] is None:
+                    if pd.isna(match_row[field]):
                         match_row[field] = vannmiljo_row["Verdi"]
                     else:
                         if not match_row[field] == vannmiljo_row["Verdi"]:
-                            try:
-                                print("Sjekk parameter:" + field + " på stasjon:" + str(match_row["Station_id"])) +\
-                                    " på dato:" + str(match_row["Date"])
-                            except:
-                                print("Huff")
+                            dato = match_row["Date"]
+                            stasjon = str(match_row["Station_id"])
+                            print("Sjekk parameter:" + field + " på stasjon:" + stasjon + " på dato:" + dato)
         else:
             match_df = niva_df[(niva_df["Latitude"] == vannmiljo_row["Latitude"])
-                               & (niva_df["Longitude"] == vannmiljo_df["Longitude"])
+                               & (niva_df["Longitude"] == vannmiljo_row["Longitude"])
                                & (niva_df["Date"] == vannmiljo_row["Date"])
                                & (niva_df["Grabb"] == vannmiljo_row["Grabb"])]
             if len(match_df) == 0:
@@ -935,10 +933,10 @@ def mergeBlotbunn():
                 }, ignore_index=True)
             else:
                 for idx2, match_row in match_df.iterrows():
-                    if match_row[parameter] is None:
+                    if pd.isna(match_row[parameter]):
                         match_row[parameter] = vannmiljo_row["Verdi"]
 
-    out_df = pd.DataFrame(niva_df, columns=["Latitude", "Longitude", "Date", "Grabb", "ES100", "H", "ISI", "NQI", "NSI"
+    out_df = pd.DataFrame(niva_df, columns=["Latitude", "Longitude", "Date", "Grabb", "ES100", "H", "ISI", "NQI", "NSI",
                                               "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype", "EQR_Type"])
 
     writer = xlsWriter("C:/Naturindeks/Naturindeks-blotbunn.xlsx")
