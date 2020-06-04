@@ -41,6 +41,11 @@ def downloadNIVA_Hardbunn():
         .makeArchive(fileformat="excel", filename="Nivabase-hardbunn.xlsx") \
         .download(path="C:/Naturindeks/")
 
+def downloadNIVA_MarinChla():
+    am.Query(where="station_type_id=3 and Water.parameter_id = 261") \
+        .makeArchive(fileformat="excel", filename="Nivabase-plankton.xlsx") \
+        .download(path="C:/Naturindeks/")
+
 
 def downloadVannNett(report):
     if report == "elver":
@@ -369,6 +374,72 @@ def rewriteNIVA_Hardbunn():
                                    "VannforekomstID", "Økoregion", "Vanntype", "EQR_Type", "Station_id"])
 
     writer = xlsWriter("C:/Naturindeks/Hardbunn-niva.xlsx")
+    out_df.to_excel(writer)
+    writer.save()
+
+def rewriteNIVA_MarinPlankton():
+    indexes_df = pd.read_excel("c:/Naturindeks/Nivabase-plankton.xlsx", "WaterChemistry", header=1)
+
+    point_df = pd.read_excel("c:/Naturindeks/Nivabase-plankton.xlsx", "StationPoint")
+
+    vannett_df = pd.read_excel("c:/Naturindeks/Vann-nett-kyst.xlsx", "Sheet1")
+
+    data_rows = []
+    for idx, index_row in indexes_df.iterrows():
+        stationid = index_row[2]
+        latitude = None
+        longitude = None
+        kommune = None
+        vannforekomst = None
+        try:
+            point = point_df.loc[point_df["StationId"] == stationid].iloc[0]
+            latitude = point["Latitude"]
+            longitude = point["Longitude"]
+
+            kommune = callGeoserverQueryKommuneF(latitude, longitude)
+            vannforekomst = callGeoserverQueryVannforekomst("nve_vannforekomst_kyst_f", latitude, longitude)
+        except IndexError:
+            print(str(stationid) + " mangler i StationPoint")
+        okoregion = ""
+        vanntype = ""
+        nasj_vanntype = ""
+        if not vannforekomst is None:
+            try:
+                vannett_row = vannett_df.loc[vannett_df["VannforekomstID"] == vannforekomst].iloc[0]
+                if not vannett_row.empty:
+                    okoregion = vannett_row["Økoregion"]
+                    vanntype = vannett_row["Vanntype"]
+                    nasj_vanntype = vannett_row["Nasjonal vanntype"]
+            except IndexError:
+                print(vannforekomst + " mangler i Vann-nett-kyst.xlsx")
+
+        sampledate = str(index_row[5])[0:10]
+        depth1 = index_row[6]
+        depth2 = index_row[7]
+
+        # Check for dublett on StationId / Date before appending.
+        if len([r for r in data_rows if r["Station_id"] == stationid and r["Date"] == sampledate
+               and r["Depth1"] == depth1 and r["Depth2"] == depth2]) == 0:
+
+            data_rows.append({"Latitude": latitude,
+                          "Longitude": longitude,
+                          "Date": sampledate,
+                          "Depth1": depth1,
+                          "Depth2": depth2,
+                          "ChlA": index_row[8],
+                          "Kommunenr": kommune,
+                          "VannforekomstID": vannforekomst,
+                          "Økoregion": okoregion,
+                          "Vanntype": vanntype,
+                          "EQR_Type": nasj_vanntype,
+                          "Station_id": stationid})
+
+    out_df = pd.DataFrame(data_rows,
+                          columns=["Latitude", "Longitude", "Date", "Depth1", "Depth2", "ChlA",
+                                   "Kommunenr", "VannforekomstID", "Økoregion", "Vanntype", "EQR_Type",
+                                   "Station_id"])
+
+    writer = xlsWriter("C:/Naturindeks/Marin-Plankton-niva.xlsx")
     out_df.to_excel(writer)
     writer.save()
 
