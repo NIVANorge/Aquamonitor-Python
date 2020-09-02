@@ -35,16 +35,16 @@ def login(username=None, password=None):
         except Exception as ex:
             raise Exception("Couldn't read username/password in file .auth")
 
-    loginurl = host + aqua_site + '/WebServices/LoginService.asmx/AuthenticateUser'
+    loginurl = aqua_site + '/login'
 
     loginparams = {'username': username, 'password': password}
 
-    userdom = requestService(loginurl, loginparams)
+    userdict = postJson(None, loginurl, loginparams)
 
-    usertype = userdom.getElementsByTagName('Usertype')[0].childNodes[0].nodeValue
+    usertype = userdict["Usertype"]
 
     if not usertype == 'NoUser':
-        token = userdom.getElementsByTagName('Token')[0].childNodes[0].nodeValue
+        token = userdict["Token"]
     else:
         token = None
 
