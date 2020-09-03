@@ -61,7 +61,7 @@ def reportJsonError(response):
         try:
             message = message + "\n\n" + json.loads(response.text).get("Message")
         except:
-            message = message + "\nDidn't send JSON."
+            message = message + "\nNo JSON in response."
 
     raise Exception(message)
 
