@@ -1,12 +1,16 @@
 import AquaMonitor
 
-AquaMonitor.host = "http://151.157.129.195/"
+# Development
+#AquaMonitor.host = "http://localhost:52795/"
+#AquaMonitor.aqua_site = ""
+#AquaMonitor.cache_site = ""
 
 #list = AquaMonitor.Query("project_id = 9566").list()
 #print(list)
 gl_params = []
 
-stations = AquaMonitor.Query("project_id = 86 and sample_date > 01.01.1990 and sample_date <= 31.12.2016 and datatype=Plankton").map("Stations")
+stations = AquaMonitor.Query("project_id = 86 and sample_date > 01.01.1990 and sample_date <= 31.12.2016 and datatype=Plankton")\
+                      .map("Stations")
 for stat in stations:
     print(stat)
 
