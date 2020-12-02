@@ -7,6 +7,7 @@ import configparser
 import pyexpat
 import time
 import datetime
+import getpass
 
 host = 'http://www.aquamonitor.no/'
 aqua_site = 'AquaServices'
@@ -32,8 +33,10 @@ def login(username=None, password=None):
             config.read(".auth")
             username = config.get("Auth", "username")
             password = config.get("Auth", "password")
-        except Exception as ex:
-            raise Exception("Couldn't read username/password in file .auth")
+        except:
+            print("Couldn't read username/password from .auth file. Please enter your credentials.")
+            username = getpass.getpass(prompt="Username: ")
+            password = getpass.getpass(prompt="Password: ")
 
     loginurl = aqua_site + '/login'
 
