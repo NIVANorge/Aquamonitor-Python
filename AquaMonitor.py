@@ -28,13 +28,15 @@ def requestService(url, params):
 
 def login(username=None, password=None):
     if username is None:
-        config = configparser.RawConfigParser()
-        try:
-            config.read(".auth")
-            username = config.get("Auth", "username")
-            password = config.get("Auth", "password")
-        except:
-            print("Couldn't read username/password from .auth file. Please enter your credentials.")
+        if os.path.is_file(".auth"):
+            config = configparser.RawConfigParser()
+            try:
+                config.read(".auth")
+                username = config.get("Auth", "username")
+                password = config.get("Auth", "password")
+            except Exception as ex:
+                raise Exception("Couldn't read username/password from .auth file.")
+        else:
             username = getpass.getpass(prompt="Username: ")
             password = getpass.getpass(prompt="Password: ")
 
