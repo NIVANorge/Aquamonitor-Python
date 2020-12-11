@@ -8,6 +8,7 @@ import pyexpat
 import time
 import datetime
 import getpass
+import os
 
 host = 'http://www.aquamonitor.no/'
 aqua_site = 'AquaServices'
