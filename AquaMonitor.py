@@ -7,6 +7,8 @@ import configparser
 import pyexpat
 import time
 import datetime
+import getpass
+import os
 
 host = 'http://www.aquamonitor.no/'
 aqua_site = 'AquaServices'
@@ -27,13 +29,18 @@ def requestService(url, params):
 
 def login(username=None, password=None):
     if username is None:
-        config = configparser.RawConfigParser()
-        try:
-            config.read(".auth")
-            username = config.get("Auth", "username")
-            password = config.get("Auth", "password")
-        except Exception as ex:
-            raise Exception("Couldn't read username/password in file .auth")
+        if os.path.isfile(".auth"):
+            config = configparser.RawConfigParser()
+            try:
+                config.read(".auth")
+                username = config.get("Auth", "username")
+                password = config.get("Auth", "password")
+            except Exception as ex:
+                raise Exception("Couldn't read username/password from .auth file.")
+        else:
+            print("Please enter your credentials.")
+            username = getpass.getpass(prompt="Username: ")
+            password = getpass.getpass(prompt="Password: ")
 
     loginurl = aqua_site + '/login'
 
