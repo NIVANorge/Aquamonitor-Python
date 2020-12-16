@@ -163,7 +163,7 @@ class Query:
                 if table is None:
                     return self.result["CurrentStationIds"]
                 else:
-                    return self.result["Items"]
+                    return self.result
             else:
                 raise Exception("Query ended with an error: " + self.result["ErrorMessage"])
 
