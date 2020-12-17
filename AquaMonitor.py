@@ -9,6 +9,8 @@ import time
 import datetime
 import getpass
 import os
+import pandas as pd
+from pandas import json_normalize
 
 host = 'http://www.aquamonitor.no/'
 aqua_site = 'AquaServices'
@@ -299,3 +301,40 @@ class Graph:
             with open(path, 'wb') as file:
                 for chunk in response.iter_content():
                     file.write(chunk)
+
+
+def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
+    """ Get all water chemistry data for the specified project ID and date range.
+    
+    Args:
+        proj_id: Int.
+        st_dt:   Str. Start of period of interest in format 'dd.mm.yyyy'
+        end_dt:  Str. End of period of interest in format 'dd.mm.yyyy'
+        token:   Str. Optional. Valid API access token. If None, will first attempt to read
+                 credentials from a '.auth' file in the installation folder. If this fails,
+                 will prompt for username and password
+                 
+    Returns:
+        Dataframe.
+    """
+    # Query API and save result-set to cache
+    where = f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
+    table = "water_chemistry_input"
+    query = Query(where=where, token=token)
+    result = query.map(table)
+    
+    # Iterate over cache and build dataframe
+    df_list = []
+    for page in range(result["Pages"]):
+        resp = getJson(query.token, f"{cache_site}/query/{query.key}/{table}/{page}")
+        df_list.append(json_normalize(resp['Items']))
+
+    df = pd.concat(df_list, axis='rows')
+    
+    # Tidy
+    df.drop(['$type', 'Id', 'Sample.Id', 'Method.Id'], axis='columns', inplace=True)
+    cols = [i.replace('_', '').split('.') for i in df.columns]
+    cols = [i[-1] if len(i) < 3 else ''.join(i[-2:]) for i in cols]
+    df.columns = cols
+    
+    return df
