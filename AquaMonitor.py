@@ -142,10 +142,7 @@ class Query:
 
     result = None
 
-    def __init__(self):
-        self.where = None
-
-    def __init__(self, where):
+    def __init__(self, where=None):
         self.where = where
 
     def map(self, table=None):
