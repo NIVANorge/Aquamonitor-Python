@@ -367,5 +367,27 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     cols = [i.replace("_", "").split(".") for i in df.columns]
     cols = [i[-1] if len(i) < 3 else "".join(i[-2:]) for i in cols]
     df.columns = cols
+    df = df[
+        [
+            "ProjectId",
+            "ProjectName",
+            "StationId",
+            "StationCode",
+            "StationName",
+            "SampleDate",
+            "Depth2",
+            "Name",
+            "Flag",
+            "Value",
+            "Unit",
+            "Approved",
+            "QuantificationLimit",
+            "DetectionLimit",
+            "Laboratory",
+            "MethodCode",
+            "MethodRef",
+            "Remark",
+        ]
+    ]
 
     return df
