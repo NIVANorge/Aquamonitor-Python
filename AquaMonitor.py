@@ -142,8 +142,9 @@ class Query:
 
     result = None
 
-    def __init__(self, where=None):
+    def __init__(self, where=None, token=None):
         self.where = where
+        self.token = token
 
     def map(self, table=None):
         if self.token is None:
