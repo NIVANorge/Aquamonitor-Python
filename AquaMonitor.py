@@ -1,21 +1,22 @@
-__author__ = 'Roar Brenden'
+__author__ = "Roar Brenden"
 
-import requests
-from xml.dom import minidom
-import json
 import configparser
-import pyexpat
-import time
 import datetime
 import getpass
+import json
 import os
+import pyexpat
+import time
+from xml.dom import minidom
+
 import pandas as pd
+import requests
 from pandas import json_normalize
 
-host = 'http://www.aquamonitor.no/'
-aqua_site = 'AquaServices'
-archive_site = 'AquaServices'
-cache_site = 'AquaCache'
+host = "http://www.aquamonitor.no/"
+aqua_site = "AquaServices"
+archive_site = "AquaServices"
+cache_site = "AquaCache"
 
 
 def requestService(url, params):
@@ -24,7 +25,10 @@ def requestService(url, params):
         return minidom.parseString(response.text)
     except pyexpat.ExpatError as e:
         print("URL: " + url)
-        print("PARAMS:" + ''.join('{}={} '.format(key, val) for key, val in params.items()))
+        print(
+            "PARAMS:"
+            + "".join("{}={} ".format(key, val) for key, val in params.items())
+        )
         print("RESPONSE:" + response.text)
         raise e
 
@@ -44,15 +48,15 @@ def login(username=None, password=None):
             username = getpass.getpass(prompt="Username: ")
             password = getpass.getpass(prompt="Password: ")
 
-    loginurl = aqua_site + '/login'
+    loginurl = aqua_site + "/login"
 
-    loginparams = {'username': username, 'password': password}
+    loginparams = {"username": username, "password": password}
 
     userdict = postJson(None, loginurl, loginparams)
 
     usertype = userdict["Usertype"]
 
-    if not usertype == 'NoUser':
+    if not usertype == "NoUser":
         token = userdict["Token"]
     else:
         token = None
@@ -102,39 +106,39 @@ def deleteJson(token, path):
 
 
 def getProject(token, projectId):
-    projectsurl = 'AquaServices/api/projects/' + str(projectId)
+    projectsurl = "AquaServices/api/projects/" + str(projectId)
     return getJson(token, projectsurl)
 
 
 def getStations(token, projectId):
-    stationsurl = 'AquaServices/api/projects/' + str(projectId) + '/stations/'
+    stationsurl = "AquaServices/api/projects/" + str(projectId) + "/stations/"
     return getJson(token, stationsurl)
 
 
 def getArchive(token, id):
-    path = archive_site + '/files/archive/' + id
+    path = archive_site + "/files/archive/" + id
     return getJson(token, path)
 
 
 def createDatafile(token, data):
-    path = archive_site + '/files/datafile/'
+    path = archive_site + "/files/datafile/"
     return postJson(token, path, data)
 
 
 def deleteArchive(token, id):
-    path = archive_site + '/files/archive/' + id
+    path = archive_site + "/files/archive/" + id
     return deleteJson(token, path)
 
 
 def downloadFile(token: str, url: str, path: str) -> None:
     resp = get(token, "", url)
-    with open(path, 'wb') as fd:
+    with open(path, "wb") as fd:
         for chunk in resp.iter_content(chunk_size=256):
             fd.write(chunk)
 
 
 def downloadArchive(token, id, file, path):
-    downloadFile(token, archive_site + "/files/archive/" + id + '/' + file, path)
+    downloadFile(token, archive_site + "/files/archive/" + id + "/" + file, path)
 
 
 class Query:
@@ -165,7 +169,9 @@ class Query:
                 else:
                     return self.result
             else:
-                raise Exception("Query ended with an error: " + self.result["ErrorMessage"])
+                raise Exception(
+                    "Query ended with an error: " + self.result["ErrorMessage"]
+                )
 
     def makeArchive(self, fileformat, filename):
         if self.token is None:
@@ -177,12 +183,17 @@ class Query:
         if not self.key is None:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
-                return Archive(fileformat, filename,
-                               token=self.token,
-                               stations=self.result["CurrentStationIds"],
-                               where=self.where)
+                return Archive(
+                    fileformat,
+                    filename,
+                    token=self.token,
+                    stations=self.result["CurrentStationIds"],
+                    where=self.where,
+                )
             else:
-                raise Exception("Query ended with an error: " + self.result["ErrorMessage"])
+                raise Exception(
+                    "Query ended with an error: " + self.result["ErrorMessage"]
+                )
 
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
@@ -194,14 +205,21 @@ class Query:
             if self.table is None:
                 self.result = resp["Result"]
             else:
-                resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
+                resp = getJson(
+                    self.token, cache_site + "/query/" + self.key + "/" + self.table
+                )
                 if not resp.get("Ready") is None:
                     while not resp["Ready"]:
                         time.sleep(1)
-                        resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
+                        resp = getJson(
+                            self.token,
+                            cache_site + "/query/" + self.key + "/" + self.table,
+                        )
                     self.result = resp
                 else:
-                    raise Exception("Query didn't respond properly for table request: " + self.table)
+                    raise Exception(
+                        "Query didn't respond properly for table request: " + self.table
+                    )
         else:
             raise Exception("Query didn't respond properly.")
 
@@ -248,7 +266,9 @@ class Archive:
                 resp = getArchive(self.token, self.id)
 
             for file in resp["Files"]:
-                downloadArchive(self.token, self.id, file["FileName"], path + file["FileName"])
+                downloadArchive(
+                    self.token, self.id, file["FileName"], path + file["FileName"]
+                )
         else:
             print("Couldn't create archive.")
 
@@ -267,45 +287,54 @@ class Archive:
             content_type = "text/plain"
 
         archive = {
-            "Expires": self.expires.strftime('%Y.%m.%d'),
+            "Expires": self.expires.strftime("%Y.%m.%d"),
             "Title": "QueryExample",
-            "Files": [{
-                "Filename": self.filename,
-                "ContentType": content_type}],
+            "Files": [{"Filename": self.filename, "ContentType": content_type}],
             "Definition": {
                 "Format": self.fileformat,
                 "StationIds": self.stations,
-                "DataWhere": self.where
-            }
+                "DataWhere": self.where,
+            },
         }
         resp = createDatafile(self.token, archive)
         if not resp.get("Id") is None:
             self.id = resp["Id"]
+
 
 class Graph:
     token = None
     site = None
     url = None
 
-    def __init__(self, width : int, height : int, **kwargs):
+    def __init__(self, width: int, height: int, **kwargs):
         self.token = kwargs.get("token")
         self.site = kwargs.get("site")
 
-        self.url = kwargs.get("graph") + "?w=" + str(width) + "&h=" + str(height) \
-        + "&stid=" + str(kwargs.get("stationId")) + "&p=" + kwargs.get("parameter") \
-        + "&where=" + kwargs.get("where")
+        self.url = (
+            kwargs.get("graph")
+            + "?w="
+            + str(width)
+            + "&h="
+            + str(height)
+            + "&stid="
+            + str(kwargs.get("stationId"))
+            + "&p="
+            + kwargs.get("parameter")
+            + "&where="
+            + kwargs.get("where")
+        )
 
     def download(self, path: str):
         response = get(self.token, self.site, self.url, stream=True)
         if response.status_code == 200:
-            with open(path, 'wb') as file:
+            with open(path, "wb") as file:
                 for chunk in response.iter_content():
                     file.write(chunk)
 
 
 def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
-    """ Get all water chemistry data for the specified project ID and date range.
-    
+    """Get all water chemistry data for the specified project ID and date range.
+
     Args:
         proj_id: Int.
         st_dt:   Str. Start of period of interest in format 'dd.mm.yyyy'
@@ -313,28 +342,30 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
         token:   Str. Optional. Valid API access token. If None, will first attempt to read
                  credentials from a '.auth' file in the installation folder. If this fails,
                  will prompt for username and password
-                 
+
     Returns:
         Dataframe.
     """
     # Query API and save result-set to cache
-    where = f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
+    where = (
+        f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
+    )
     table = "water_chemistry_input"
     query = Query(where=where, token=token)
     result = query.map(table)
-    
+
     # Iterate over cache and build dataframe
     df_list = []
     for page in range(result["Pages"]):
         resp = getJson(query.token, f"{cache_site}/query/{query.key}/{table}/{page}")
-        df_list.append(json_normalize(resp['Items']))
+        df_list.append(json_normalize(resp["Items"]))
 
-    df = pd.concat(df_list, axis='rows')
-    
+    df = pd.concat(df_list, axis="rows")
+
     # Tidy
-    df.drop(['$type', 'Id', 'Sample.Id', 'Method.Id'], axis='columns', inplace=True)
-    cols = [i.replace('_', '').split('.') for i in df.columns]
-    cols = [i[-1] if len(i) < 3 else ''.join(i[-2:]) for i in cols]
+    df.drop(["$type", "Id", "Sample.Id", "Method.Id"], axis="columns", inplace=True)
+    cols = [i.replace("_", "").split(".") for i in df.columns]
+    cols = [i[-1] if len(i) < 3 else "".join(i[-2:]) for i in cols]
     df.columns = cols
-    
+
     return df
