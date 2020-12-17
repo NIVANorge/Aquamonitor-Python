@@ -391,3 +391,46 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     ]
 
     return df
+
+
+def get_projects(token=None):
+    """Get full list of projects in the Nivadatabase/Aquamonitor.
+
+    Args:
+        token: Str. Optional. Valid access token for the Aquamonitor API
+
+    Returns:
+        Dataframe
+    """
+    if not token:
+        token = login()
+
+    resp = requests.get(
+        host + aqua_site + "/api/query/Projects",
+        cookies=dict(aqua_key=token),
+    )
+    df = json_normalize(resp.json())
+
+    # Tidy
+    df.rename(
+        {
+            "_Id": "ProjectId",
+            "_Name": "ProjectName",
+            "_Description": "Description",
+            "_Number": "ProjectCode",
+        },
+        inplace=True,
+        axis="columns",
+    )
+    df = df[
+        [
+            "ProjectId",
+            "ProjectCode",
+            "ProjectName",
+            "Description",
+        ]
+    ]
+
+    df.sort_values(["ProjectId"], inplace=True)
+
+    return df
