@@ -49,17 +49,14 @@ def login(username=None, password=None):
             password = getpass.getpass(prompt="Password: ")
 
     loginurl = aqua_site + "/login"
-
     loginparams = {"username": username, "password": password}
-
     userdict = postJson(None, loginurl, loginparams)
-
     usertype = userdict["Usertype"]
 
     if not usertype == "NoUser":
         token = userdict["Token"]
     else:
-        token = None
+        raise Exception("Login failed. Please check your username and password.")
 
     return token
 
@@ -332,16 +329,17 @@ class Graph:
                     file.write(chunk)
 
 
-def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
+def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
     """Get all water chemistry data for the specified project ID and date range.
 
     Args:
-        proj_id: Int.
-        st_dt:   Str. Start of period of interest in format 'dd.mm.yyyy'
-        end_dt:  Str. End of period of interest in format 'dd.mm.yyyy'
-        token:   Str. Optional. Valid API access token. If None, will first attempt to read
-                 credentials from a '.auth' file in the installation folder. If this fails,
-                 will prompt for username and password
+        proj_id:  Int.
+        st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
+        end_dt:   Str. End of period of interest in format 'dd.mm.yyyy'
+        token:    Str. Optional. Valid API access token. If None, will first attempt to read
+                  credentials from a '.auth' file in the installation folder. If this fails,
+                  will prompt for username and password
+        approved: Bool. Whether to return only 'approved' samples (default) or all samples
 
     Returns:
         Dataframe.
@@ -361,6 +359,8 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
         df_list.append(json_normalize(resp["Items"]))
 
     df = pd.concat(df_list, axis="rows")
+
+    df.dropna(subset=["Value"], inplace=True)
 
     # Tidy
     df.drop(["$type", "Id", "Sample.Id", "Method.Id"], axis="columns", inplace=True)
@@ -389,6 +389,13 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
             "Remark",
         ]
     ]
+    df.rename({"Name": "ParameterName"}, axis="columns", inplace=True)
+    df.sort_values(
+        ["ProjectId", "StationId", "SampleDate", "ParameterName"], inplace=True
+    )
+
+    if approved:
+        df = df.query("Approved == True")
 
     return df
 
@@ -397,7 +404,9 @@ def get_projects(token=None):
     """Get full list of projects in the Nivadatabase/Aquamonitor.
 
     Args:
-        token: Str. Optional. Valid access token for the Aquamonitor API
+        token: Str. Optional. Valid API access token. If None, will first attempt to read
+               credentials from a '.auth' file in the installation folder. If this fails,
+               will prompt for username and password
 
     Returns:
         Dataframe
@@ -432,5 +441,45 @@ def get_projects(token=None):
     ]
 
     df.sort_values(["ProjectId"], inplace=True)
+
+    return df
+
+
+def get_project_stations(proj_id, token=None):
+    """Get stations associated with a specific project.
+
+    Args:
+        proj_id: Int. Project ID for project of interest
+        token:   Str. Optional. Valid API access token. If None, will first attempt to read
+                 credentials from a '.auth' file in the installation folder. If this fails,
+                 will prompt for username and password
+
+    Returns:
+        Dataframe
+    """
+    if not token:
+        token = login()
+
+    resp = requests.get(
+        host + aqua_site + f"/api/projects/{proj_id}/stations",
+        cookies=dict(aqua_key=token),
+    )
+    df = json_normalize(resp.json())
+
+    # Tidy
+    del df["Type._Id"]
+    df.rename(
+        {
+            "Id": "StationId",
+            "ProjectId": "ProjectId",
+            "Code": "StationCode",
+            "Name": "StationName",
+            "Type._Text": "Type",
+        },
+        inplace=True,
+        axis="columns",
+    )
+    df = df[["ProjectId", "StationId", "StationCode", "StationName", "Type"]]
+    df.sort_values(["ProjectId", "StationId"], inplace=True)
 
     return df
