@@ -1,6 +1,6 @@
 # Aquamonitor-Python
 
-A Python library providing external access to Nivabasen, NIVA's internal water chemistry database.
+A Python library providing external access to Nivabasen, NIVA's internal water chemistry and ecology database.
 
 ## Installation
 
