@@ -34,6 +34,17 @@ def requestService(url, params):
 
 
 def login(username=None, password=None):
+    """Login to Aquamonitor with your username and password. For security, avoid passing the args
+        directly. The function will first attempt to read stored credentials from a '.auth' file
+        and, if this is not possible, it will prompt for your username and password.
+
+    Args:
+        username: Str. Optional. Aquamonitor username
+        password: Str. Optional. Aquamonitor password
+
+    Returns:
+        Str. Access token valid for one day.
+    """
     if username is None:
         if os.path.isfile(".auth"):
             config = configparser.RawConfigParser()
@@ -66,7 +77,7 @@ def get(token: str, site: str, path: str, stream: bool = False):
 
 
 def reportJsonError(response):
-    message = "AquaMonitor failed with status: " + response.reason + " and message:"
+    message = "AquaMonitor failed with status: " + response.status_code + " and message:"
     if response.text is not None:
         try:
             message = message + "\n\n" + json.loads(response.text).get("Message")
@@ -142,7 +153,6 @@ class Query:
     token = None
     key = None
     table = None
-
     result = None
 
     def __init__(self, where=None, token=None):
@@ -205,6 +215,7 @@ class Query:
                 resp = getJson(
                     self.token, cache_site + "/query/" + self.key + "/" + self.table
                 )
+
                 if not resp.get("Ready") is None:
                     while not resp["Ready"]:
                         time.sleep(1)
@@ -230,6 +241,7 @@ class Query:
             query["Where"] = self.where
 
         resp = postJson(self.token, cache_site + "/query/", query)
+
         if resp.get("Key") is None:
             raise Exception("Couldn't create query. Response: " + str(resp))
         else:
@@ -414,11 +426,8 @@ def get_projects(token=None):
     if not token:
         token = login()
 
-    resp = requests.get(
-        host + aqua_site + "/api/query/Projects",
-        cookies=dict(aqua_key=token),
-    )
-    df = json_normalize(resp.json())
+    resp = getJson(token, aqua_site + "/api/query/Projects")
+    df = json_normalize(resp)
 
     # Tidy
     df.rename(
@@ -460,11 +469,8 @@ def get_project_stations(proj_id, token=None):
     if not token:
         token = login()
 
-    resp = requests.get(
-        host + aqua_site + f"/api/projects/{proj_id}/stations",
-        cookies=dict(aqua_key=token),
-    )
-    df = json_normalize(resp.json())
+    resp = getJson(token, aqua_site + f"/api/projects/{proj_id}/stations")
+    df = json_normalize(resp)
 
     # Tidy
     del df["Type._Id"]
