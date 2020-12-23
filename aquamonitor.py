@@ -383,6 +383,8 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
     cols = [i[-1] if len(i) < 3 else "".join(i[-2:]) for i in cols]
     df.columns = cols
 
+    df["SampleDate"] = pd.to_datetime(df["SampleDate"])
+
     if "Depth1" not in df.columns:
         df["Depth1"] = np.nan
 
