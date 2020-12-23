@@ -9,6 +9,7 @@ import pyexpat
 import time
 from xml.dom import minidom
 
+import numpy as np
 import pandas as pd
 import requests
 from pandas import json_normalize
@@ -77,7 +78,9 @@ def get(token: str, site: str, path: str, stream: bool = False):
 
 
 def reportJsonError(response):
-    message = "AquaMonitor failed with status: " + response.status_code + " and message:"
+    message = (
+        "AquaMonitor failed with status: " + response.status_code + " and message:"
+    )
     if response.text is not None:
         try:
             message = message + "\n\n" + json.loads(response.text).get("Message")
@@ -379,6 +382,13 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
     cols = [i.replace("_", "").split(".") for i in df.columns]
     cols = [i[-1] if len(i) < 3 else "".join(i[-2:]) for i in cols]
     df.columns = cols
+
+    if "Depth1" not in df.columns:
+        df["Depth1"] = np.nan
+
+    if "Depth2" not in df.columns:
+        df["Depth2"] = np.nan
+
     df = df[
         [
             "ProjectId",
@@ -387,23 +397,19 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
             "StationCode",
             "StationName",
             "SampleDate",
+            "Depth1",
             "Depth2",
             "Name",
             "Flag",
             "Value",
             "Unit",
             "Approved",
-            "QuantificationLimit",
-            "DetectionLimit",
-            "Laboratory",
-            "MethodCode",
-            "MethodRef",
-            "Remark",
         ]
     ]
     df.rename({"Name": "ParameterName"}, axis="columns", inplace=True)
     df.sort_values(
-        ["ProjectId", "StationId", "SampleDate", "ParameterName"], inplace=True
+        ["ProjectId", "StationId", "SampleDate", "Depth1", "Depth2", "ParameterName"],
+        inplace=True,
     )
 
     if approved:
