@@ -413,6 +413,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
         ["ProjectId", "StationId", "SampleDate", "Depth1", "Depth2", "ParameterName"],
         inplace=True,
     )
+    df.reset_index(inplace=True, drop=True)
 
     if approved:
         df = df.query("Approved == True")
@@ -458,6 +459,7 @@ def get_projects(token=None):
     ]
 
     df.sort_values(["ProjectId"], inplace=True)
+    df.reset_index(inplace=True, drop=True)
 
     return df
 
@@ -495,5 +497,6 @@ def get_project_stations(proj_id, token=None):
     )
     df = df[["ProjectId", "StationId", "StationCode", "StationName", "Type"]]
     df.sort_values(["ProjectId", "StationId"], inplace=True)
+    df.reset_index(inplace=True, drop=True)
 
     return df
