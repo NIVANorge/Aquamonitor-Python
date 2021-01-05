@@ -15,8 +15,8 @@ if os.path.isfile(requirements_path):
 setuptools.setup(
     name="aquamonitor",
     version="0.0.1",
-    author="Roar Brenden",
-    author_email="roar.brenden@niva.no",
+    author="Roar Branden",
+    author_email="roar.branden@niva.no",
     description="Python scripts to access Nivabasen",
     long_description=long_description,
     long_description_content_type="text/markdown",
