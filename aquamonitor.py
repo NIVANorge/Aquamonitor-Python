@@ -344,7 +344,7 @@ class Graph:
                     file.write(chunk)
 
 
-def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
+def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     """Get all water chemistry data for the specified project ID and date range.
 
     Args:
@@ -354,7 +354,6 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
         token:    Str. Optional. Valid API access token. If None, will first attempt to read
                   credentials from a '.auth' file in the installation folder. If this fails,
                   will prompt for username and password
-        approved: Bool. Whether to return only 'approved' samples (default) or all samples
 
     Returns:
         Dataframe.
@@ -363,7 +362,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
     where = (
         f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
     )
-    table = "water_chemistry_input"
+    table = "water_chemistry_output"
     query = Query(where=where, token=token)
     result = query.map(table)
 
@@ -378,18 +377,36 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
     df.dropna(subset=["Value"], inplace=True)
 
     # Tidy
-    df.drop(["$type", "Id", "Sample.Id", "Method.Id"], axis="columns", inplace=True)
-    cols = [i.replace("_", "").split(".") for i in df.columns]
-    cols = [i[-1] if len(i) < 3 else "".join(i[-2:]) for i in cols]
-    df.columns = cols
+    df.drop(
+        ["$type", "Sample.$type", "Parameter.Id", "Sample.Id"],
+        axis="columns",
+        inplace=True,
+    )
 
-    df["SampleDate"] = pd.to_datetime(df["SampleDate"])
+    df["Sample.SampleDate"] = pd.to_datetime(df["Sample.SampleDate"])
 
-    if "Depth1" not in df.columns:
-        df["Depth1"] = np.nan
+    # if "Sample.Depth1" not in df.columns:
+    #     df["Sample.Depth1"] = np.nan
 
-    if "Depth2" not in df.columns:
-        df["Depth2"] = np.nan
+    # if "Sample.Depth2" not in df.columns:
+    #     df["Sample.Depth2"] = np.nan
+
+    df.rename(
+        {
+            "Sample.SampleDate": "SampleDate",
+            "Sample.Station.Id": "StationId",
+            "Sample.Station.Code": "StationCode",
+            "Sample.Station.Name": "StationName",
+            "Sample.Station.Project.Id": "ProjectId",
+            "Sample.Station.Project.Name": "ProjectName",
+            "Parameter.Name": "ParameterName",
+            "Parameter.Unit": "Unit",
+            "Sample.Depth1": "Depth1",
+            "Sample.Depth2": "Depth2",
+        },
+        axis="columns",
+        inplace=True,
+    )
 
     df = df[
         [
@@ -401,22 +418,18 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, approved=True):
             "SampleDate",
             "Depth1",
             "Depth2",
-            "Name",
+            "ParameterName",
             "Flag",
             "Value",
             "Unit",
-            "Approved",
         ]
     ]
-    df.rename({"Name": "ParameterName"}, axis="columns", inplace=True)
+
     df.sort_values(
         ["ProjectId", "StationId", "SampleDate", "Depth1", "Depth2", "ParameterName"],
         inplace=True,
     )
     df.reset_index(inplace=True, drop=True)
-
-    if approved:
-        df = df.query("Approved == True")
 
     return df
 
