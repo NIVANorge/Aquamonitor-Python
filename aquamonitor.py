@@ -177,7 +177,7 @@ class Query:
                 if table is None:
                     return self.result["CurrentStationIds"]
                 else:
-                    return self.result
+                    return Pages(self, self.result)
             else:
                 raise Exception(
                     "Query ended with an error: " + self.result["ErrorMessage"]
@@ -249,6 +249,32 @@ class Query:
             raise Exception("Couldn't create query. Response: " + str(resp))
         else:
             self.key = resp["Key"]
+
+
+class Pages:
+    token = None
+    key = None
+    table = None
+    total = 0
+
+    def __init__(self, query, result):
+        self.token = query.token
+        self.key = query.key
+        self.table = query.table
+        self.total = result["Pages"]
+
+    def fetch(self, page):
+        if self.total > page >= 0:
+            resp = getJson(
+                self.token,
+                cache_site + "/query/" + self.key + "/" + self.table + "/" + str(page),
+            )
+            if not resp.get("Items") is None:
+                return resp.get("Items")
+            else:
+                raise Exception("Page wasn't ready.")
+        else:
+            raise Exception("Page outside of range.")
 
 
 class Archive:
@@ -364,13 +390,13 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     )
     table = "water_chemistry_output"
     query = Query(where=where, token=token)
-    result = query.map(table)
+    pages = query.map(table)
 
     # Iterate over cache and build dataframe
     df_list = []
-    for page in range(result["Pages"]):
-        resp = getJson(query.token, f"{cache_site}/query/{query.key}/{table}/{page}")
-        df_list.append(json_normalize(resp["Items"]))
+    for page in range(pages.total):
+        resp = pages.fetch(page)
+        df_list.append(json_normalize(resp))
 
     df = pd.concat(df_list, axis="rows")
 
