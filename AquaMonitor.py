@@ -226,15 +226,17 @@ class Pages:
     key = None
     table = None
     total = 0
+    pages = 0
 
     def __init__(self, query, result):
         self.token = query.token
         self.key = query.key
         self.table = query.table
         self.total = result["Total"]
+        self.pages = result["Pages"]
 
     def fetch(self, page):
-        if self.total > page >= 0:
+        if self.pages > page >= 0:
             resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table + "/" + str(page))
             if not resp.get("Items") is None:
                 return resp.get("Items")
