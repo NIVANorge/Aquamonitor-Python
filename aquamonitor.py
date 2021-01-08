@@ -256,15 +256,17 @@ class Pages:
     key = None
     table = None
     total = 0
+    pages = 0
 
     def __init__(self, query, result):
         self.token = query.token
         self.key = query.key
         self.table = query.table
-        self.total = result["Pages"]
+        self.total = result["Total"]
+        self.pages = result["Pages"]
 
     def fetch(self, page):
-        if self.total > page >= 0:
+        if self.pages > page >= 0:
             resp = getJson(
                 self.token,
                 cache_site + "/query/" + self.key + "/" + self.table + "/" + str(page),
@@ -394,7 +396,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
 
     # Iterate over cache and build dataframe
     df_list = []
-    for page in range(pages.total):
+    for page in range(pages.pages):
         resp = pages.fetch(page)
         df_list.append(json_normalize(resp))
 
