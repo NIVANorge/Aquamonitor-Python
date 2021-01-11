@@ -1,4 +1,4 @@
-import AquaMonitor
+import aquamonitor as am
 
 # Development
 #AquaMonitor.host = "http://localhost:52795/"
@@ -6,23 +6,23 @@ import AquaMonitor
 #AquaMonitor.cache_site = ""
 
 # Test
-AquaMonitor.host = "https://test-aquamonitor.niva.no/"
+am.host = "https://test-aquamonitor.niva.no/"
 
-#list = AquaMonitor.Query("project_id = 9566").list()
+#list = am.Query("project_id = 9566").list()
 #print(list)
 #gl_params = []
 
-# stations = AquaMonitor.Query("project_id = 86 and sample_date > 01.01.1990 and sample_date <= 31.12.2016 and datatype=Plankton")\
+# stations = am.Query("project_id = 86 and sample_date > 01.01.1990 and sample_date <= 31.12.2016 and datatype=Plankton")\
 #                       .map("Stations")
 # for stat in stations:
 #     print(stat)
 
 
-#AquaMonitor.Query("project_id = 9566 and sample_date > 01.01.2016 and sample_date <= 31.12.2016")\
+#am.Query("project_id = 9566 and sample_date > 01.01.2016 and sample_date <= 31.12.2016")\
 #            .makeArchive("excel", "Mjosa_2016.xlsx")\
 #            .download("/Users/roar/Mjosa/")
 
-pages = AquaMonitor.Query("project_id = 12433 and sample_date > 01.01.2019 and sample_date <= 31.12.2019")\
+pages = am.Query("project_id = 12433 and sample_date > 01.01.2019 and sample_date <= 31.12.2019")\
                         .map("water_chemistry_output")
 
 print(pages.total)

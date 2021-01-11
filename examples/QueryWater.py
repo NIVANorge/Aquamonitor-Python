@@ -1,4 +1,4 @@
-import AquaMonitor as am
+import aquamonitor as am
 import datetime as dt
 
 params = ["Water.parameter_id=11","Water.parameter_id=261","Water.parameter_id=2097","Water.parameter_id=1621","Water.parameter_id=301","Water.parameter_id=13"]

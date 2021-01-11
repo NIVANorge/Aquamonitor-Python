@@ -1,4 +1,4 @@
-import AquaMonitor as am
+import aquamonitor as am
 import datetime
 
 am.host = "http://localhost:59265"
