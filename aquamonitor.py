@@ -47,10 +47,11 @@ def login(username=None, password=None):
         Str. Access token valid for one day.
     """
     if username is None:
-        if os.path.isfile(".auth"):
+        authfile = os.path.join(os.path.dirname(__file__), ".auth")
+        if os.path.isfile(authfile):
             config = configparser.RawConfigParser()
             try:
-                config.read(".auth")
+                config.read(authfile)
                 username = config.get("Auth", "username")
                 password = config.get("Auth", "password")
             except Exception as ex:
@@ -79,7 +80,7 @@ def get(token: str, site: str, path: str, stream: bool = False):
 
 def reportJsonError(response):
     message = (
-        "AquaMonitor failed with status: " + response.status_code + " and message:"
+        "AquaMonitor failed with status: " + str(response.status_code) + " and message:"
     )
     if response.text is not None:
         try:
