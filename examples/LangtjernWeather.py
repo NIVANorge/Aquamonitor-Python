@@ -1,14 +1,17 @@
 __author__ = 'Roar Brenden'
 
 
-import AquaMonitor
+import aquamonitor as am
 import datetime
 
-root = "/Users/roar/"
+#root = "/Users/roar/"
+root = "C:/Temp/"
+am.host = "https://test-aquamonitor.niva.no/"
+
 fromDate = datetime.date.today() + datetime.timedelta( days = -150 )
 toDate = datetime.date.today() + datetime.timedelta( days = -1 )
 expires = datetime.date.today() + datetime.timedelta( days=1 )
-token = AquaMonitor.login()
+token = am.login()
 
 def make_file(title, filename, stationid, datatype) :
     where = "sample_date>=" + datetime.datetime.strftime(fromDate, '%d.%m.%Y') \
@@ -27,17 +30,17 @@ def make_file(title, filename, stationid, datatype) :
             "DataWhere": where
         }
     }
-    resp = AquaMonitor.createDatafile(token, data)
+    resp = am.createDatafile(token, data)
     return resp["Id"]
 
 
 def download_file(id, filename) :
     archived = False
     while not archived:
-        resp = AquaMonitor.getArchive(token, id)
+        resp = am.getArchive(token, id)
         archived = resp.get("Archived")
     path = root + filename
-    AquaMonitor.downloadArchive(token, id, filename, path)
+    am.downloadArchive(token, id, filename, path)
 
 
 weatherFileId = make_file('Langtjern weather', 'langtjernWeather.csv', 62040, 'Air')

@@ -1,10 +1,9 @@
 __author__ = 'Roar Brenden'
 
-import AquaMonitor
+import aquamonitor as am
 import datetime
 import zipfile
 
-expires = datetime.date.today() + datetime.timedelta(days=1)
 
 def make_shapefile(title, filename, stationids, where) :
 
@@ -20,24 +19,28 @@ def make_shapefile(title, filename, stationids, where) :
             "DataWhere": where
         }
     }
-    resp = AquaMonitor.createDatafile(token, data)
+    resp = am.createDatafile(token, data)
     return resp["Id"]
 
 
 def download_file(id, filename, path) :
     archived = False
     while not archived:
-        resp = AquaMonitor.getArchive(token, id)
+        resp = am.getArchive(token, id)
         archived = resp.get("Archived")
-    AquaMonitor.downloadArchive(token, id, filename, path)
+    am.downloadArchive(token, id, filename, path)
 
-token = AquaMonitor.login()
+
+expires = datetime.date.today() + datetime.timedelta(days=1)
+
+am.host = "https://test-aquamonitor.niva.no/"
+token = am.login()
 
 filename = 'Referanseelver2017.zip'
 projectId = 11226
 
 where = "project_id=" + str(projectId)
-stations = AquaMonitor.getStations(token, projectId)
+stations = am.getStations(token, projectId)
 stationids = []
 
 for st in stations:
@@ -46,12 +49,12 @@ print(stationids)
 
 archive = make_shapefile("Referanseelver", filename, stationids, where)
 
-root = '/Users/roar/'
+root = 'c:/Temp/'
 path = root + filename
 
 download_file(archive, filename, path)
 
-#AquaMonitor.deleteArchive(token, archive)
+am.deleteArchive(token, archive)
 
 zipFile = zipfile.ZipFile(path, 'r')
 zipFile.extractall(root)

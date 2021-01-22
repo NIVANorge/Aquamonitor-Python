@@ -1,6 +1,6 @@
 __author__ = 'Roar Brenden'
 
-import AquaMonitor as am
+import aquamonitor as am
 import pandas as pd
 from pandas import ExcelWriter as xlsWriter
 import requests
@@ -133,38 +133,42 @@ def generate_maps():
 
 
 def generate_map(stationId):
-    meta = am.Query("station_id = " + str(stationId)).map("Metadata")
-    for m in meta:
-        sid = m["_Id"]
-        lon = m["_Longitude"]
-        lat = m["_Latitude"]
-        if lon > 24:
-            epsg = 32635
-        elif lon > 18:
-            epsg = 32634
-        elif lon > 12:
-            epsg = 32633
-        else:
-            epsg = 32632
-        x, y = transform(Proj(init="epsg:4326"), Proj(init="epsg:" + str(epsg)), lon, lat)
+    result = am.Query("station_id = " + str(stationId)).map("Metadata")
+    print(result.pages)
 
-        bbox = str(x-3000) + "," + str(y-3000) + "," + str(x+3000) + "," + str(y+3000)
-        width = 300
-        height = 300
-        resp = requests.get("http://www.aquamonitor.no/geoserver/wms?" +
-                            "service=WMS&version=1.1.0&request=GetMap&" +
-                            "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
-                            "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
-                            "&srs=EPSG:" + str(epsg) + "&format=image%2Fpng",
-                            stream=True,
-                            auth=("aquamonitor", "trommer"))
+    for i in range(result.pages):
+        meta = result.fetch(i)
+        for m in meta:
+            sid = m["_Id"]
+            lon = m["_Longitude"]
+            lat = m["_Latitude"]
+            if lon > 24:
+                epsg = 32635
+            elif lon > 18:
+                epsg = 32634
+            elif lon > 12:
+                epsg = 32633
+            else:
+                epsg = 32632
+            x, y = transform(Proj(init="epsg:4326"), Proj(init="epsg:" + str(epsg)), lon, lat)
 
-        if resp.status_code == 200:
-            with open("C:/Innsjo2019/kart/" + str(sid) + ".png", "wb") as f:
-                for chunk in resp:
-                    f.write(chunk)
-        else:
-            print("Id:" + str(sid) + " error code:" + str(resp.status_code))
+            bbox = str(x-3000) + "," + str(y-3000) + "," + str(x+3000) + "," + str(y+3000)
+            width = 300
+            height = 300
+            resp = requests.get("http://www.aquamonitor.no/geoserver/wms?" +
+                                "service=WMS&version=1.1.0&request=GetMap&" +
+                                "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
+                                "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
+                                "&srs=EPSG:" + str(epsg) + "&format=image%2Fpng",
+                                stream=True,
+                                auth=("aquamonitor", "trommer"))
+
+            if resp.status_code == 200:
+                with open("C:/Innsjo2019/kart/" + str(sid) + ".png", "wb") as f:
+                    for chunk in resp:
+                        f.write(chunk)
+            else:
+                print("Id:" + str(sid) + " error code:" + str(resp.status_code))
 
 
 #download_am_file()
