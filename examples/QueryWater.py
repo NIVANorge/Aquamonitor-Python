@@ -3,10 +3,10 @@ import datetime as dt
 
 params = ["Water.parameter_id=11","Water.parameter_id=261","Water.parameter_id=2097","Water.parameter_id=1621","Water.parameter_id=301","Water.parameter_id=13"]
 
-am.host = "http://151.157.129.195/"
+am.host = "https://test-aquamonitor.niva.no/"
 
 path = "AquaCache/query/"
-token = am.login("AquaServices")
+token = am.login()
 
 station_years = {}
 station_projects = {}
@@ -36,23 +36,25 @@ def get_stations(key, year) :
         else:
             print(resp)
 
-    stations = resp["Items"]
+    pages = resp["Pages"]
+    for i in range(pages):
+        stationsResponse = am.getJson(token, path + key + "/Stations/" + str(i))
+        stations = stationsResponse["Items"]
+        for stat in stations:
+            stid = stat["Id"]
+            if stid in station_years:
+                if not station_years[stid][len(station_years[stid]) - 1] == year:
+                    station_years[stid].append(year)
+            else:
+                station_years[stid] = [year]
+                station_projects[stid] = []
+
+            if len(station_years[stid]) == 1:
+                station_projects[stid].append(stat["ProjectId"])
+
+            if not stat["ProjectId"] in project_name_count.keys():
+                project_name_count[stat["ProjectId"]] = {"Count": 0}
     am.deleteJson(token, path + key)
-
-    for stat in stations:
-        stid = stat["Id"]
-        if stid in station_years:
-            if not station_years[stid][len(station_years[stid]) - 1] == year:
-                station_years[stid].append(year)
-        else:
-            station_years[stid] = [year]
-            station_projects[stid] = []
-
-        if len(station_years[stid]) == 1:
-            station_projects[stid].append(stat["ProjectId"])
-
-        if not stat["ProjectId"] in project_name_count.keys():
-            project_name_count[stat["ProjectId"]] = {"Count": 0}
 
 
 def make_file(title, filename, stids, prid) :

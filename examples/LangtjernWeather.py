@@ -4,7 +4,10 @@ __author__ = 'Roar Brenden'
 import aquamonitor as am
 import datetime
 
-root = "/Users/roar/"
+#root = "/Users/roar/"
+root = "C:/Temp/"
+am.host = "https://test-aquamonitor.niva.no/"
+
 fromDate = datetime.date.today() + datetime.timedelta( days = -150 )
 toDate = datetime.date.today() + datetime.timedelta( days = -1 )
 expires = datetime.date.today() + datetime.timedelta( days=1 )

@@ -2,7 +2,7 @@ __author__ = 'Roar Brenden'
 import aquamonitor as am
 import datetime as dt
 
-am.host = "http://aquamon.niva.corp/"
+am.host = "https://test-aquamonitor.niva.no/"
 am.aqua_site = "AquaCache"
 
 path = am.aqua_site + "/query/"
@@ -62,23 +62,24 @@ def get_stations(key, year):
                     print(resp)
                 raise Exception("Something was wrong!")
 
-    stations = resp["Items"]
+    for i in range(resp["Pages"]):
+        statResponse = am.getJson(token, path + key + "/stations/" + str(i))
+        stations = statResponse["Items"]
+        for stat in stations:
+            stid = stat["Id"]
+            if stid in station_years:
+                if not station_years[stid][len(station_years[stid]) - 1] == year:
+                    station_years[stid].append(year)
+            else:
+                station_years[stid] = [year]
+                station_projects[stid] = []
+
+            if len(station_years[stid]) == 1:
+                station_projects[stid].append(stat["ProjectId"])
+
+            if not stat["ProjectId"] in project_name_count.keys():
+                project_name_count[stat["ProjectId"]] = {"Count": 0}
     am.deleteJson(token, path + key)
-
-    for stat in stations:
-        stid = stat["Id"]
-        if stid in station_years:
-            if not station_years[stid][len(station_years[stid]) - 1] == year:
-                station_years[stid].append(year)
-        else:
-            station_years[stid] = [year]
-            station_projects[stid] = []
-
-        if len(station_years[stid]) == 1:
-            station_projects[stid].append(stat["ProjectId"])
-
-        if not stat["ProjectId"] in project_name_count.keys():
-            project_name_count[stat["ProjectId"]] = {"Count": 0}
 
 
 def make_file(title, filename, stids, datatype, prid) :

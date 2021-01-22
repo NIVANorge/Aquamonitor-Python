@@ -37,10 +37,10 @@ queryGraph(token, {
 
 print("Get the results from one sample.")
 queryGraph(token, {
-    "query": "query getResults($nr: Int) {results(sampleNumber: $nr){name,units,analysis,accreditedId,entryQualifier,"
+    "query": "query getResults($nr: Int) {results(sampleNumber: $nr){name,units,analysis,test{anaFraction},accreditedId,entryQualifier,"
              "numericEntry,mu,loq,status}}",
     "variables": {
-        "nr": 102689
+        "nr": 41215
     }
 })
 

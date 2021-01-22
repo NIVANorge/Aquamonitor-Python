@@ -4,7 +4,6 @@ import aquamonitor as am
 import datetime
 import zipfile
 
-expires = datetime.date.today() + datetime.timedelta(days=1)
 
 def make_shapefile(title, filename, stationids, where) :
 
@@ -30,6 +29,9 @@ def download_file(id, filename, path) :
         resp = am.getArchive(token, id)
         archived = resp.get("Archived")
     am.downloadArchive(token, id, filename, path)
+
+
+expires = datetime.date.today() + datetime.timedelta(days=1)
 
 am.host = "https://test-aquamonitor.niva.no/"
 token = am.login()

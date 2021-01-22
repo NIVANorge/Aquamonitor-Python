@@ -1,9 +1,11 @@
 import aquamonitor as am
 import datetime
 
-am.host = "http://localhost:59265"
-am.aqua_site = ""
-am.archive_site = ""
+#am.host = "http://localhost:59265"
+#am.aqua_site = ""
+#am.archive_site = ""
+
+am.host = "https://test-aquamonitor.niva.no/"
 
 where = "project_id=12428"
 title = "DuPont"

@@ -10,7 +10,7 @@ am.aqua_site = "admin/"
 token = am.login()
 id = "10910818"
 
-sample = am.getJson(token, am.aqua_site + "api/data/watersamples/" + id)
+sample = am.getJson(token, am.aqua_site + "api/watersamples/" + id)
 print(sample)
 
 list = am.getJson(token, am.aqua_site + "lab/api/links?table=water&sampleId=" + id)
