@@ -6,7 +6,7 @@ A Python library providing external access to Nivabasen, NIVA's internal water c
 
 Aquamonitor-Python is pre-installed on [NIVA's JupyterHub](https://jupyterhub.niva.no). To install on a local machine
 
-    python -m pip install --no-cache-dir git+https://github.com/NIVANorge/Aquamonitor-Python.git@chem_queries
+    python -m pip install --no-cache-dir git+https://github.com/NIVANorge/Aquamonitor-Python.git
     
 ## Quick start
 
