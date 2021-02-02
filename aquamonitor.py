@@ -483,10 +483,10 @@ def get_projects(token=None):
     # Tidy
     df.rename(
         {
-            "_Id": "ProjectId",
-            "_Name": "ProjectName",
-            "_Description": "Description",
-            "_Number": "ProjectCode",
+            "Id": "ProjectId",
+            "Name": "ProjectName",
+            "Description": "Description",
+            "Number": "ProjectCode",
         },
         inplace=True,
         axis="columns",
