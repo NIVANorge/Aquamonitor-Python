@@ -477,7 +477,7 @@ def get_projects(token=None):
     if not token:
         token = login()
 
-    resp = getJson(token, aqua_site + "/api/query/Projects")
+    resp = getJson(token, aqua_site + "/api/Projects")
     df = json_normalize(resp)
 
     # Tidy
