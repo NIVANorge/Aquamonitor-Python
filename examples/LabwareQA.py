@@ -5,14 +5,14 @@ import requests
 #am.aqua_site = ""
 
 am.host = "https://test-aquamonitor.niva.no/"
-am.aqua_site = "admin/"
+am.aqua_site = "admin"
 
 
 token = am.login()
 
 
 def queryGraph(token, document):
-    resp = requests.post(am.host + am.aqua_site + "lab/graphql", json=document,
+    resp = requests.post(am.host + am.aqua_site + "/lab/graphql", json=document,
                          cookies=dict(aqua_key=token))
     print(resp.text)
 
