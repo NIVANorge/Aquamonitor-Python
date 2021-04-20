@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 from pandas import json_normalize
 
-host = "http://www.aquamonitor.no/"
+host = "https://aquamonitor.niva.no/"
 aqua_site = "AquaServices"
 archive_site = "AquaServices"
 cache_site = "AquaCache"
@@ -78,15 +78,15 @@ def get(token: str, site: str, path: str, stream: bool = False):
     return requests.get(host + site + path, cookies=dict(aqua_key=token), stream=stream)
 
 
-def reportJsonError(response):
+def reportJsonError(url, response):
     message = (
-        "AquaMonitor failed with status: " + str(response.status_code) + " and message:"
+        "AquaMonitor failed with status: " + str(response.status_code) + " for url: " + url + "\nMessage: "
     )
     if response.text is not None:
         try:
-            message = message + "\n\n" + json.loads(response.text).get("Message")
+            message = message + json.loads(response.text).get("Message")
         except:
-            message = message + "\nNo JSON in response."
+            message = message + "No JSON in response."
 
     raise Exception(message)
 
@@ -96,7 +96,7 @@ def getJson(token, path):
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        reportJsonError(response)
+        reportJsonError(host + path, response)
 
 
 def postJson(token, path, inJson):
@@ -104,7 +104,7 @@ def postJson(token, path, inJson):
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        reportJsonError(response)
+        reportJsonError(host + path, response)
 
 
 def putJson(token, path, inJson):

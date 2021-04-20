@@ -6,7 +6,7 @@ import datetime
 
 #root = "/Users/roar/"
 root = "C:/Temp/"
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 
 fromDate = datetime.date.today() + datetime.timedelta( days = -150 )
 toDate = datetime.date.today() + datetime.timedelta( days = -1 )

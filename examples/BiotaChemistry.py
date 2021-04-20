@@ -1,6 +1,6 @@
 import aquamonitor as am
 
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 
 token = am.login()
 

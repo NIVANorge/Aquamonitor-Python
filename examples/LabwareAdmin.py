@@ -4,11 +4,11 @@ import aquamonitor as am
 #am.host = "http://localhost:65493/"
 #am.aqua_site = ""
 
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 am.aqua_site = "admin"
 
 token = am.login()
-id = "11948043"
+id = "12071329"
 
 sample = am.getJson(token, am.aqua_site + "/api/watersamples/" + id)
 print(sample)

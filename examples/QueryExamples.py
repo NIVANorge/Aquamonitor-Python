@@ -6,7 +6,7 @@ import aquamonitor as am
 #AquaMonitor.cache_site = ""
 
 # Test
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 
 #list = am.Query("project_id = 9566").list()
 #print(list)

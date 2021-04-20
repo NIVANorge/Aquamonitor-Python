@@ -33,7 +33,7 @@ def download_file(id, filename, path) :
 
 expires = datetime.date.today() + datetime.timedelta(days=1)
 
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 token = am.login()
 
 filename = 'Referanseelver2017.zip'

@@ -2,9 +2,10 @@ __author__ = 'Roar Brenden'
 import aquamonitor as am
 import datetime as dt
 
-am.host = "https://test-aquamonitor.niva.no/"
-am.aqua_site = "AquaCache"
+#am.host = "https://test-aquamonitor.niva.no/"
 
+
+am.aqua_site = "AquaCache"
 path = am.aqua_site + "/query/"
 token = am.login()
 

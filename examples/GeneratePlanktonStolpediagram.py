@@ -1,7 +1,7 @@
 __author__ = 'Roar Brenden'
 
 import aquamonitor as am
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 token = am.login()
 site = "mjosovervak"
 where = "project_id=1098 and sample_date>01.01.2018 and sample_date<=31.12.2018 and Plankton.parameter_id=2"

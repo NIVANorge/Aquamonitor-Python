@@ -4,7 +4,7 @@ import json
 import pandas as pd
 from pandas import ExcelWriter as xlsWriter
 
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 
 
 def downloadNIVA_PTI():

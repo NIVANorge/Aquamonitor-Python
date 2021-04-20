@@ -17,8 +17,9 @@ projectInnsjo1995 = 3659
 # Project with stations for 2019
 projectInnsjo2019 = 12433
 
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 
+geoserverUrl = "https://aquamonitor.niva.no/geoserver"
 
 def download_am_file():
     am.Query("project_id=" + str(projectInnsjo2019))\
@@ -27,7 +28,7 @@ def download_am_file():
 
 
 def create_excel_file(outFile):
-    stationsFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "Station")
+    stationsFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "Stasjoner")
 
     writer = xlsWriter("c:/Innsjo2019/" + outFile)
 
@@ -61,13 +62,12 @@ def create_excel_file(outFile):
         outFrame.at[stId, "Lake Area"] = attributeRow["Areal"]
         outFrame.at[stId, "Naturvern"] = attributeRow["Naturvern"]
         outFrame.at[stId, "Verneform"] = attributeRow["Naturvernform"]
-        outFrame.at[stId, "AquaMonitor"] = '=HYPERLINK("http://aquamonitor.no/Innsjo2019/Map.aspx?id=' + str(stId) + '", "Se kart")'
 
     outFrame["UTM North"] = None
     outFrame["UTM East"] = None
     outFrame["UTM Zone"] = None
 
-    pointFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "StationPoint")
+    pointFrame = pd.read_excel("c:/Innsjo2019/am1000sjoer.xlsx", "Stasjoner")
     pointFrame.set_index("StationId", inplace=True)
 
     for stId, pointRow in pointFrame.iterrows():
@@ -116,7 +116,7 @@ def generate_maps():
         bbox = str(x-3000) + "," + str(y-3000) + "," + str(x+3000) + "," + str(y+3000)
         width = 300
         height = 300
-        resp = requests.get("http://www.aquamonitor.no/geoserver/wms?" +
+        resp = requests.get(geoserverUrl + "/wms?" +
                             "service=WMS&version=1.1.0&request=GetMap&" +
                             "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
                             "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
@@ -155,7 +155,7 @@ def generate_map(stationId):
             bbox = str(x-3000) + "," + str(y-3000) + "," + str(x+3000) + "," + str(y+3000)
             width = 300
             height = 300
-            resp = requests.get("http://www.aquamonitor.no/geoserver/wms?" +
+            resp = requests.get(geoserverUrl + "/wms?" +
                                 "service=WMS&version=1.1.0&request=GetMap&" +
                                 "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
                                 "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
@@ -171,9 +171,6 @@ def generate_map(stationId):
                 print("Id:" + str(sid) + " error code:" + str(resp.status_code))
 
 
-#download_am_file()
-#create_excel_file("1000innsjoer_2.xlsx")
-#generate_maps()
-generate_map(26186)
-generate_map(26821)
-generate_map(46620)
+download_am_file()
+create_excel_file("1000innsjoer_2.xlsx")
+generate_maps()

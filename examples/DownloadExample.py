@@ -5,7 +5,7 @@ import datetime
 #am.aqua_site = ""
 #am.archive_site = ""
 
-am.host = "https://test-aquamonitor.niva.no/"
+#am.host = "https://test-aquamonitor.niva.no/"
 
 where = "project_id=12428"
 title = "DuPont"

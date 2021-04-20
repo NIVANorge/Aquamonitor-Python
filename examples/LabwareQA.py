@@ -4,8 +4,8 @@ import requests
 #am.host = "http://localhost:65493/"
 #am.aqua_site = ""
 
-am.host = "https://test-aquamonitor.niva.no/"
-am.aqua_site = "admin"
+#am.host = "https://test-aquamonitor.niva.no/"
+#am.aqua_site = "admin"
 
 
 token = am.login()
