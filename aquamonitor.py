@@ -80,7 +80,11 @@ def get(token: str, site: str, path: str, stream: bool = False):
 
 def reportJsonError(url, response):
     message = (
-        "AquaMonitor failed with status: " + str(response.status_code) + " for url: " + url + "\nMessage: "
+        "AquaMonitor failed with status: "
+        + str(response.status_code)
+        + " for url: "
+        + url
+        + "\nMessage: "
     )
     if response.text is not None:
         try:
@@ -422,16 +426,18 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
 
     df.rename(
         {
-            "Sample.SampleDate": "SampleDate",
-            "Sample.Station.Id": "StationId",
-            "Sample.Station.Code": "StationCode",
-            "Sample.Station.Name": "StationName",
-            "Sample.Station.Project.Id": "ProjectId",
-            "Sample.Station.Project.Name": "ProjectName",
-            "Parameter.Name": "ParameterName",
-            "Parameter.Unit": "Unit",
-            "Sample.Depth1": "Depth1",
-            "Sample.Depth2": "Depth2",
+            "Sample.SampleDate": "sample_date",
+            "Sample.Station.Id": "station_id",
+            "Sample.Station.Code": "station_code",
+            "Sample.Station.Name": "station_name",
+            "Sample.Station.Project.Id": "project_id",
+            "Sample.Station.Project.Name": "project_name",
+            "Parameter.Name": "parameter_name",
+            "Parameter.Unit": "unit",
+            "Sample.Depth1": "depth1",
+            "Sample.Depth2": "depth2",
+            "Flag": "flag",
+            "Value": "value",
         },
         axis="columns",
         inplace=True,
@@ -439,23 +445,30 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
 
     df = df[
         [
-            "ProjectId",
-            "ProjectName",
-            "StationId",
-            "StationCode",
-            "StationName",
-            "SampleDate",
-            "Depth1",
-            "Depth2",
-            "ParameterName",
-            "Flag",
-            "Value",
-            "Unit",
+            "project_id",
+            "project_name",
+            "station_id",
+            "station_code",
+            "station_name",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+            "flag",
+            "value",
+            "unit",
         ]
     ]
 
     df.sort_values(
-        ["ProjectId", "StationId", "SampleDate", "Depth1", "Depth2", "ParameterName"],
+        [
+            "project_id",
+            "station_id",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+        ],
         inplace=True,
     )
     df.reset_index(inplace=True, drop=True)
@@ -483,24 +496,24 @@ def get_projects(token=None):
     # Tidy
     df.rename(
         {
-            "Id": "ProjectId",
-            "Name": "ProjectName",
-            "Description": "Description",
-            "Number": "ProjectCode",
+            "Id": "project_id",
+            "Name": "project_name",
+            "Description": "description",
+            "Number": "project_code",
         },
         inplace=True,
         axis="columns",
     )
     df = df[
         [
-            "ProjectId",
-            "ProjectCode",
-            "ProjectName",
-            "Description",
+            "project_id",
+            "project_code",
+            "project_name",
+            "description",
         ]
     ]
 
-    df.sort_values(["ProjectId"], inplace=True)
+    df.sort_values(["project_id"], inplace=True)
     df.reset_index(inplace=True, drop=True)
 
     return df
@@ -528,17 +541,17 @@ def get_project_stations(proj_id, token=None):
     del df["Type._Id"]
     df.rename(
         {
-            "Id": "StationId",
-            "Project.Id": "ProjectId",
-            "Code": "StationCode",
-            "Name": "StationName",
-            "Type._Text": "Type",
+            "Id": "station_id",
+            "Project.Id": "project_id",
+            "Code": "station_code",
+            "Name": "station_name",
+            "Type._Text": "type",
         },
         inplace=True,
         axis="columns",
     )
-    df = df[["ProjectId", "StationId", "StationCode", "StationName", "Type"]]
-    df.sort_values(["ProjectId", "StationId"], inplace=True)
+    df = df[["project_id", "station_id", "station_code", "station_name", "type"]]
+    df.sort_values(["project_id", "station_id"], inplace=True)
     df.reset_index(inplace=True, drop=True)
 
     return df
