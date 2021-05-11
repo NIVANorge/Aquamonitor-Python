@@ -12,7 +12,6 @@ Aquamonitor-Python is pre-installed on [NIVA's JupyterHub](https://jupyterhub.ni
 
 ``` python
 import aquamonitor as am
-am.host = "https://test-aquamonitor.niva.no/"
 
 # Get access token
 token = am.login()
