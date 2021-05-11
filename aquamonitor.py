@@ -529,7 +529,7 @@ def get_project_stations(proj_id, token=None):
     df.rename(
         {
             "Id": "StationId",
-            "ProjectId": "ProjectId",
+            "Project.Id": "ProjectId",
             "Code": "StationCode",
             "Name": "StationName",
             "Type._Text": "Type",
