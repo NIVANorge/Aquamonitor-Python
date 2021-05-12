@@ -5,9 +5,10 @@ import requests
 #am.aqua_site = ""
 
 #am.host = "https://test-aquamonitor.niva.no/"
-#am.aqua_site = "admin"
 
 
+# Must set aqua_site for this one to function
+am.aqua_site = "admin"
 token = am.login()
 
 
