@@ -169,11 +169,36 @@ class Query:
         self.key = key
         self.table = table
 
+    def createQuery(self):
+        if self.token is None:
+            self.token = login()
+        query = {}
+        if self.table is not None:
+            query["From"] = [{"Table": self.table}]
+        if self.where is not None:
+            query["Where"] = self.where
+        if self.selectedStations is not None:
+            query["SelectedStations"] = self.selectedStations
+        resp = postJson(self.token, cache_site + "/query/", query)
+        if resp.get("Key") is None:
+            raise Exception("Couldn't create query. Response: " + str(resp))
+        else:
+            self.key = resp["Key"]
+
+    def readQuery(self):
+        resp = getJson(self.token, cache_site + "/query/" + self.key)
+        self.table = resp["Query"]["From"][0]["Table"]
+        self.selectedStations = resp["Query"]["SelectedStations"]
+        self.where = resp["Query"]["Where"]
+        self.result = resp["Result"]
+
     def list(self):
         if self.token is None:
             self.token = login()
         if self.key is None:
             self.createQuery()
+        else:
+            self.readQuery()
         if self.key is not None:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
@@ -186,11 +211,13 @@ class Query:
                     "Query ended with an error: " + self.result["ErrorMessage"]
                 )
 
-    def map(self, item_func):
+    def map(self, item_func=lambda c: c):
         if self.token is None:
             self.token = login()
         if self.key is None:
             self.createQuery()
+        else:
+            self.readQuery()
         if self.key is not None:
             self.checkQuery()
             if self.result.get("ErrorMessage") is None:
@@ -206,7 +233,7 @@ class Query:
                         if page_index < pages.pages:
                             next_page = pages.fetch(page_index)
                             for item in next_page:
-                                item_func(item)
+                                yield item_func(item)
                             page_index += 1
                         if page_index == pages.pages:
                             self.checkTable()
@@ -219,10 +246,10 @@ class Query:
     def makeArchive(self, file_format, filename):
         if self.token is None:
             self.token = login()
-
         if self.key is None:
             self.createQuery()
-
+        else:
+            self.readQuery()
         if self.key is not None:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
@@ -240,7 +267,6 @@ class Query:
 
     def checkQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
-
         if not resp.get("Result") is None:
             while not resp["Result"]["Ready"]:
                 time.sleep(1)
@@ -275,24 +301,6 @@ class Query:
         else:
             raise Exception("Query didn't respond properly.")
 
-    def createQuery(self):
-        query = {}
-
-        if self.table is not None:
-            query["From"] = [{"Table": self.table}]
-
-        if self.where is not None:
-            query["Where"] = self.where
-
-        if self.selectedStations is not None:
-            query["SelectedStations"] = self.selectedStations
-
-        resp = postJson(self.token, cache_site + "/query/", query)
-
-        if resp.get("Key") is None:
-            raise Exception("Couldn't create query. Response: " + str(resp))
-        else:
-            self.key = resp["Key"]
 
 
 class Pages:
