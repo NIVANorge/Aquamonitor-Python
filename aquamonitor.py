@@ -538,14 +538,14 @@ def get_project_stations(proj_id, token=None):
     df = json_normalize(resp)
 
     # Tidy
-    del df["Type._Id"]
+    del df["Type.Id"]
     df.rename(
         {
             "Id": "station_id",
             "Project.Id": "project_id",
             "Code": "station_code",
             "Name": "station_name",
-            "Type._Text": "type",
+            "Type.Text": "type",
         },
         inplace=True,
         axis="columns",
