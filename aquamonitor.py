@@ -5,12 +5,12 @@ import datetime
 import getpass
 import json
 import os
-import pyexpat
 import time
 from xml.dom import minidom
 
 import numpy as np
 import pandas as pd
+import pyexpat
 import requests
 from pandas import json_normalize
 
@@ -276,9 +276,7 @@ class Query:
             raise Exception("Query didn't respond properly.")
 
     def checkTable(self):
-        resp = getJson(
-            self.token, cache_site + "/query/" + self.key + "/" + self.table
-        )
+        resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
 
         if not resp.get("Ready") is None:
             self.result = resp
@@ -300,7 +298,6 @@ class Query:
                 self.checkTable()
         else:
             raise Exception("Query didn't respond properly.")
-
 
 
 class Pages:
@@ -351,7 +348,7 @@ class Archive:
         if self.id is None:
             self.createArchive()
 
-        if not self.id is None:
+        if self.id is not None:
             resp = getArchive(self.token, self.id)
             while resp.get("Archived") is None:
                 time.sleep(5)
@@ -443,14 +440,13 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
         f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
     )
     table = "water_chemistry_output"
-    query = Query(where=where, token=token)
-    pages = query.map(table)
+    query = Query(where=where, token=token, table=table)
+    pages = query.map()
 
     # Iterate over cache and build dataframe
     df_list = []
-    for page in range(pages.pages):
-        resp = pages.fetch(page)
-        df_list.append(json_normalize(resp))
+    for page in pages:
+        df_list.append(json_normalize(page))
 
     df = pd.concat(df_list, axis="rows")
 
@@ -585,14 +581,14 @@ def get_project_stations(proj_id, token=None):
     df = json_normalize(resp)
 
     # Tidy
-    del df["Type._Id"]
+    del df["Type.Id"]
     df.rename(
         {
             "Id": "station_id",
             "Project.Id": "project_id",
             "Code": "station_code",
             "Name": "station_name",
-            "Type._Text": "type",
+            "Type.Text": "type",
         },
         inplace=True,
         axis="columns",
