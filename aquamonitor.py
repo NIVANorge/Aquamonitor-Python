@@ -441,12 +441,10 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     )
     table = "water_chemistry_output"
     query = Query(where=where, token=token, table=table)
-    pages = query.map()
-
     # Iterate over cache and build dataframe
     df_list = []
-    for page in pages:
-        df_list.append(json_normalize(page))
+    for df_item in query.map(lambda item: json_normalize(item)):
+        df_list.append(df_item)
 
     df = pd.concat(df_list, axis="rows")
 
