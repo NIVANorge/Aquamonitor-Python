@@ -421,6 +421,28 @@ class Graph:
                     file.write(chunk)
 
 
+def wrap_water_chemistry(item):
+    sample = item["Sample"]
+    station = sample["Station"]
+    project = station["Project"]
+    parameter = item["Parameter"]
+    sample_date = pd.to_datetime(sample["SampleDate"])
+    return [
+        project["Id"],
+        project["Name"],
+        station["Id"],
+        station["Code"],
+        station["Name"],
+        sample_date,
+        sample["Depth1"],
+        sample["Depth2"],
+        parameter["Name"],
+        item.get("Flag"),
+        item.get("Value"),
+        parameter.get("Unit")
+        ]
+
+
 def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     """Get all water chemistry data for the specified project ID and date range.
 
@@ -442,64 +464,13 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     table = "water_chemistry_output"
     query = Query(where=where, token=token, table=table)
     # Iterate over cache and build dataframe
-    df_list = []
-    for df_item in query.map(lambda item: json_normalize(item)):
-        df_list.append(df_item)
+    resp_list = []
+    for item in query.map(wrap_water_chemistry):
+        resp_list.append(item)
 
-    df = pd.concat(df_list, axis="rows")
-
-    df.dropna(subset=["Value"], inplace=True)
-
-    # Tidy
-    df.drop(
-        ["$type", "Sample.$type", "Parameter.Id", "Sample.Id"],
-        axis="columns",
-        inplace=True,
-    )
-
-    df["Sample.SampleDate"] = pd.to_datetime(df["Sample.SampleDate"])
-
-    # if "Sample.Depth1" not in df.columns:
-    #     df["Sample.Depth1"] = np.nan
-
-    # if "Sample.Depth2" not in df.columns:
-    #     df["Sample.Depth2"] = np.nan
-
-    df.rename(
-        {
-            "Sample.SampleDate": "sample_date",
-            "Sample.Station.Id": "station_id",
-            "Sample.Station.Code": "station_code",
-            "Sample.Station.Name": "station_name",
-            "Sample.Station.Project.Id": "project_id",
-            "Sample.Station.Project.Name": "project_name",
-            "Parameter.Name": "parameter_name",
-            "Parameter.Unit": "unit",
-            "Sample.Depth1": "depth1",
-            "Sample.Depth2": "depth2",
-            "Flag": "flag",
-            "Value": "value",
-        },
-        axis="columns",
-        inplace=True,
-    )
-
-    df = df[
-        [
-            "project_id",
-            "project_name",
-            "station_id",
-            "station_code",
-            "station_name",
-            "sample_date",
-            "depth1",
-            "depth2",
-            "parameter_name",
-            "flag",
-            "value",
-            "unit",
-        ]
-    ]
+    df = pd.DataFrame(data=resp_list, columns=["project_id", "project_name", "station_id", "station_code",
+                                               "station_name", "sample_date", "depth1", "depth2", "parameter_name",
+                                               "flag", "value", "unit"])
 
     df.sort_values(
         [
