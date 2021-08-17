@@ -98,7 +98,7 @@ def create_excel_file(outFile):
 
 
 def generate_maps():
-    meta = am.Query("project_id = " + str(projectInnsjo2019)).map("Metadata")
+    meta = am.Query("project_id = " + str(projectInnsjo2019), table="Metadata").list()
     for m in meta:
         sid = m["_Id"]
         lon = m["_Longitude"]
@@ -133,7 +133,7 @@ def generate_maps():
 
 
 def generate_map(stationId):
-    result = am.Query("station_id = " + str(stationId)).map("Metadata")
+    result = am.Query("station_id = " + str(stationId), table="Metadata").list()
     print(result.pages)
 
     for i in range(result.pages):

@@ -486,8 +486,6 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
         ],
     )
 
-    df.dropna(subset=["value"], inplace=True)
-
     df.sort_values(
         [
             "project_id",
