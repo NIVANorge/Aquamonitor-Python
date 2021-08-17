@@ -5,13 +5,14 @@ import datetime
 import getpass
 import json
 import os
-import pyexpat
 import time
 from xml.dom import minidom
 
 import numpy as np
 import pandas as pd
+import pyexpat
 import requests
+from joblib import Parallel, delayed
 from pandas import json_normalize
 
 host = "https://aquamonitor.niva.no/"
@@ -407,6 +408,108 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
 
     df = pd.concat(df_list, axis="rows")
 
+    df.dropna(subset=["Value"], inplace=True)
+
+    # Tidy
+    df.drop(
+        ["$type", "Sample.$type", "Parameter.Id", "Sample.Id"],
+        axis="columns",
+        inplace=True,
+    )
+
+    df["Sample.SampleDate"] = pd.to_datetime(df["Sample.SampleDate"])
+
+    # if "Sample.Depth1" not in df.columns:
+    #     df["Sample.Depth1"] = np.nan
+
+    # if "Sample.Depth2" not in df.columns:
+    #     df["Sample.Depth2"] = np.nan
+
+    df.rename(
+        {
+            "Sample.SampleDate": "sample_date",
+            "Sample.Station.Id": "station_id",
+            "Sample.Station.Code": "station_code",
+            "Sample.Station.Name": "station_name",
+            "Sample.Station.Project.Id": "project_id",
+            "Sample.Station.Project.Name": "project_name",
+            "Parameter.Name": "parameter_name",
+            "Parameter.Unit": "unit",
+            "Sample.Depth1": "depth1",
+            "Sample.Depth2": "depth2",
+            "Flag": "flag",
+            "Value": "value",
+        },
+        axis="columns",
+        inplace=True,
+    )
+
+    df = df[
+        [
+            "project_id",
+            "project_name",
+            "station_id",
+            "station_code",
+            "station_name",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+            "flag",
+            "value",
+            "unit",
+        ]
+    ]
+
+    df.sort_values(
+        [
+            "project_id",
+            "station_id",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+        ],
+        inplace=True,
+    )
+    df.reset_index(inplace=True, drop=True)
+
+    return df
+
+
+def get_project_chemistry_parallel(proj_id, st_dt, end_dt, token=None):
+    """Get all water chemistry data for the specified project ID and date range.
+
+    Args:
+        proj_id:  Int.
+        st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
+        end_dt:   Str. End of period of interest in format 'dd.mm.yyyy'
+        token:    Str. Optional. Valid API access token. If None, will first attempt to read
+                  credentials from a '.auth' file in the installation folder. If this fails,
+                  will prompt for username and password
+
+    Returns:
+        Dataframe.
+    """
+
+    def page_parser(pages_obj, page_no):
+        """Parse a single page from a pages object and return a dataframe."""
+        return json_normalize(pages_obj.fetch(page_no))
+
+    # Query API and save result-set to cache
+    where = (
+        f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
+    )
+    table = "water_chemistry_output"
+    query = Query(where=where, token=token)
+    pages = query.map(table)
+    n_pages = pages.pages
+
+    # Iterate over cache and build dataframe
+    df_list = Parallel(n_jobs=n_pages, prefer="threads")(
+        delayed(page_parser)(pages, page) for page in range(n_pages)
+    )
+    df = pd.concat(df_list, axis="rows")
     df.dropna(subset=["Value"], inplace=True)
 
     # Tidy
