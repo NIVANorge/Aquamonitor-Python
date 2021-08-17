@@ -472,6 +472,8 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
                                                "station_name", "sample_date", "depth1", "depth2", "parameter_name",
                                                "flag", "value", "unit"])
 
+    df.dropna(subset=["value"], inplace=True)
+
     df.sort_values(
         [
             "project_id",
