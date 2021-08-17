@@ -439,8 +439,8 @@ def wrap_water_chemistry(item):
         parameter["Name"],
         item.get("Flag"),
         item.get("Value"),
-        parameter.get("Unit")
-        ]
+        parameter.get("Unit"),
+    ]
 
 
 def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
@@ -468,9 +468,23 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
     for item in query.map(wrap_water_chemistry):
         resp_list.append(item)
 
-    df = pd.DataFrame(data=resp_list, columns=["project_id", "project_name", "station_id", "station_code",
-                                               "station_name", "sample_date", "depth1", "depth2", "parameter_name",
-                                               "flag", "value", "unit"])
+    df = pd.DataFrame(
+        data=resp_list,
+        columns=[
+            "project_id",
+            "project_name",
+            "station_id",
+            "station_code",
+            "station_name",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+            "flag",
+            "value",
+            "unit",
+        ],
+    )
 
     df.dropna(subset=["value"], inplace=True)
 
