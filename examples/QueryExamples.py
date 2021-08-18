@@ -22,8 +22,9 @@ import aquamonitor as am
 #            .makeArchive("excel", "Mjosa_2016.xlsx")\
 #            .download("/Users/roar/Mjosa/")
 
-pages = am.Query("project_id = 12433 and sample_date > 01.01.2019 and sample_date <= 31.12.2019")\
-                        .map("water_chemistry_output")
+pages = am.Query("project_id = 12433 and sample_date > 01.01.2019 and sample_date <= 31.12.2019",
+                 table="water_chemistry_output")\
+                        .pages()
 
 print(pages.total)
 #

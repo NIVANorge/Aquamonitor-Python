@@ -22,7 +22,7 @@ def filterMethod(key, name):
 
 def approveValues(name, dates):
     for value in filter(lambda wc: wc["Method"]["Name"] == name and wc["Sample"]["SampleDate"] in dates,
-                        am.Query(key=key).map()):
+                        am.Query(key=key).list()):
         value["Approved"] = True
         value["Remark"] = ""
         am.putJson(token, am.aqua_site + f"/api/waterchemistry/{value['Id']}", value)
@@ -40,7 +40,7 @@ def disapproveValues(name, dates):
             print(am.putJson(token, am.aqua_site + f"/api/waterchemistry/{value['Id']}", value))
 
 def insertValues(original, method_id, pairs):
-    for value in am.Query(key=key).map():
+    for value in am.Query(key=key).list():
         for pair in pairs:
             if value["Method"]["Name"] == original \
                               and value["Sample"]["SampleDate"] == pair["Date"]:
