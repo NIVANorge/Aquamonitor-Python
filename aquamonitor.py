@@ -205,7 +205,42 @@ class Query:
                 if self.table is None:
                     return self.result["CurrentStationIds"]
                 else:
-                    return Pages(self, self.result)
+                    page_index = 0
+                    items = []
+                    self.checkTable()
+                    pages = Pages(self, self.result)
+                    while not self.result["Ready"] or page_index < pages.pages:
+                        if page_index < pages.pages:
+                            next_page = pages.fetch(page_index)
+                            for item in next_page:
+                                items.append(item)
+                            page_index += 1
+                        if page_index == pages.pages:
+                            self.checkTable()
+                            pages = Pages(self, self.result)
+                    return items
+            else:
+                raise Exception(
+                    "Query ended with an error: " + self.result["ErrorMessage"]
+                )
+
+    def pages(self):
+        if self.token is None:
+            self.token = login()
+        if self.key is None:
+            self.createQuery()
+        else:
+            self.readQuery()
+        if self.table is None:
+            raise Exception("Query should include a table.")
+        if self.key is not None:
+            self.waitQuery()
+            if self.result.get("ErrorMessage") is None:
+                self.checkTable()
+                while not self.result["Ready"]:
+                    time.sleep(1)
+                    self.checkTable()
+                return Pages(self, self.result)
             else:
                 raise Exception(
                     "Query ended with an error: " + self.result["ErrorMessage"]
@@ -277,7 +312,6 @@ class Query:
 
     def checkTable(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
-
         if not resp.get("Ready") is None:
             self.result = resp
         else:
@@ -287,7 +321,6 @@ class Query:
 
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
-
         if not resp.get("Result") is None:
             while not resp["Result"]["Ready"]:
                 time.sleep(1)
