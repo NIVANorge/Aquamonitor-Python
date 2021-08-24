@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import pyexpat
 import requests
+from joblib import Parallel, delayed
 from pandas import json_normalize
 
 host = "https://aquamonitor.niva.no/"
@@ -454,31 +455,8 @@ class Graph:
                     file.write(chunk)
 
 
-def wrap_water_chemistry(item):
-    sample = item["Sample"]
-    station = sample["Station"]
-    project = station["Project"]
-    parameter = item["Parameter"]
-    sample_date = pd.to_datetime(sample["SampleDate"])
-    return [
-        project["Id"],
-        project["Name"],
-        station["Id"],
-        station["Code"],
-        station["Name"],
-        sample_date,
-        sample["Depth1"],
-        sample["Depth2"],
-        parameter["Name"],
-        item.get("Flag"),
-        item.get("Value"),
-        parameter.get("Unit"),
-    ]
-
-
-def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
+def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     """Get all water chemistry data for the specified project ID and date range.
-
     Args:
         proj_id:  Int.
         st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
@@ -486,38 +464,68 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
         token:    Str. Optional. Valid API access token. If None, will first attempt to read
                   credentials from a '.auth' file in the installation folder. If this fails,
                   will prompt for username and password
-
+        n_jobs:   None or int. Number of threads to use for fetching query results in
+                  parallel. If None (default) the number of threads is equal to the number
+                  of pages in the server response, which is usually a sensible choice
     Returns:
         Dataframe.
     """
+
+    def page_parser(pages_obj, page_no):
+        """Parse a single page from a pages object and return a dataframe."""
+        return json_normalize(pages_obj.fetch(page_no))
+
     # Query API and save result-set to cache
     where = (
         f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
     )
     table = "water_chemistry_output"
     query = Query(where=where, token=token, table=table)
-    # Iterate over cache and build dataframe
-    resp_list = []
-    for item in query.map(wrap_water_chemistry):
-        resp_list.append(item)
+    pages = query.pages()
+    n_pages = pages.pages
 
-    df = pd.DataFrame(
-        data=resp_list,
-        columns=[
-            "project_id",
-            "project_name",
-            "station_id",
-            "station_code",
-            "station_name",
-            "sample_date",
-            "depth1",
-            "depth2",
-            "parameter_name",
-            "flag",
-            "value",
-            "unit",
-        ],
+    if n_jobs is None:
+        n_jobs = n_pages
+
+    # Iterate over cache and build dataframe
+    df_list = Parallel(n_jobs=n_jobs, prefer="threads")(
+        delayed(page_parser)(pages, page) for page in range(n_pages)
     )
+
+    df = pd.concat(df_list, axis="rows")
+    columns = [
+        "Sample.Station.Project.Id",
+        "Sample.Station.Project.Name",
+        "Sample.Station.Id",
+        "Sample.Station.Code",
+        "Sample.Station.Name",
+        "Sample.SampleDate",
+        "Sample.Depth1",
+        "Sample.Depth2",
+        "Parameter.Name",
+        "Flag",
+        "Value",
+        "Parameter.Unit",
+    ]
+
+    df = df[columns]
+
+    df.columns = [
+        "project_id",
+        "project_name",
+        "station_id",
+        "station_code",
+        "station_name",
+        "sample_date",
+        "depth1",
+        "depth2",
+        "parameter_name",
+        "flag",
+        "value",
+        "unit",
+    ]
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
 
     df.sort_values(
         [
