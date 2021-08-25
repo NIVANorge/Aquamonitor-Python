@@ -85,7 +85,7 @@ key = openQuery(station_id, year)
 table = pd.read_excel("C:\\temp\\Verdier som kan fjernes_skjules i Aquamonitor.xlsx",
                       "Nævestadfjorden", header=1)
 
-iterateMethod(9, "Temp")
+#iterateMethod(9, "Temp")
 #iterateMethod(6, "Kond")
 #iterateMethod(8, "pH")
 #iterateMethod(10, "Temp")
