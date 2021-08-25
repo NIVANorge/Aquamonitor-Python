@@ -5,13 +5,14 @@ import datetime
 import getpass
 import json
 import os
-import pyexpat
 import time
 from xml.dom import minidom
 
 import numpy as np
 import pandas as pd
+import pyexpat
 import requests
+from joblib import Parallel, delayed
 from pandas import json_normalize
 
 host = "https://aquamonitor.niva.no/"
@@ -159,47 +160,137 @@ def downloadArchive(token, id, file, path):
 
 class Query:
     token = None
-    key = None
-    table = None
     result = None
+    selectedStations = None
 
-    def __init__(self, where=None, token=None):
+    def __init__(self, where=None, token=None, stations=None, key=None, table=None):
         self.where = where
         self.token = token
-
-    def map(self, table=None):
-        if self.token is None:
-            self.token = login()
-
+        self.selectedStations = stations
+        self.key = key
         self.table = table
 
+    def createQuery(self):
+        if self.token is None:
+            self.token = login()
+        query = {}
+        if self.table is not None:
+            query["From"] = [{"Table": self.table}]
+        if self.where is not None:
+            query["Where"] = self.where
+        if self.selectedStations is not None:
+            query["SelectedStations"] = self.selectedStations
+        resp = postJson(self.token, cache_site + "/query/", query)
+        if resp.get("Key") is None:
+            raise Exception("Couldn't create query. Response: " + str(resp))
+        else:
+            self.key = resp["Key"]
+
+    def readQuery(self):
+        resp = getJson(self.token, cache_site + "/query/" + self.key)
+        self.table = resp["Query"]["From"][0]["Table"]
+        self.selectedStations = resp["Query"]["SelectedStations"]
+        self.where = resp["Query"]["Where"]
+        self.result = resp["Result"]
+
+    def list(self):
+        if self.token is None:
+            self.token = login()
         if self.key is None:
             self.createQuery()
-
+        else:
+            self.readQuery()
         if self.key is not None:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
-                if table is None:
+                if self.table is None:
                     return self.result["CurrentStationIds"]
                 else:
-                    return Pages(self, self.result)
+                    page_index = 0
+                    items = []
+                    self.checkTable()
+                    pages = Pages(self, self.result)
+                    while not self.result["Ready"] or page_index < pages.pages:
+                        if page_index < pages.pages:
+                            next_page = pages.fetch(page_index)
+                            for item in next_page:
+                                items.append(item)
+                            page_index += 1
+                        if page_index == pages.pages:
+                            self.checkTable()
+                            pages = Pages(self, self.result)
+                    return items
             else:
                 raise Exception(
                     "Query ended with an error: " + self.result["ErrorMessage"]
                 )
 
-    def makeArchive(self, fileformat, filename):
+    def pages(self):
         if self.token is None:
             self.token = login()
-
         if self.key is None:
             self.createQuery()
+        else:
+            self.readQuery()
+        if self.table is None:
+            raise Exception("Query should include a table.")
+        if self.key is not None:
+            self.waitQuery()
+            if self.result.get("ErrorMessage") is None:
+                self.checkTable()
+                while not self.result["Ready"]:
+                    time.sleep(1)
+                    self.checkTable()
+                return Pages(self, self.result)
+            else:
+                raise Exception(
+                    "Query ended with an error: " + self.result["ErrorMessage"]
+                )
 
-        if not self.key is None:
+    def map(self, item_func=lambda c: c):
+        if self.token is None:
+            self.token = login()
+        if self.key is None:
+            self.createQuery()
+        else:
+            self.readQuery()
+        if self.key is not None:
+            self.checkQuery()
+            if self.result.get("ErrorMessage") is None:
+                if self.table is None:
+                    self.waitQuery()
+                    for st_id in self.result["CurrentStationIds"]:
+                        item_func(st_id)
+                else:
+                    page_index = 0
+                    self.checkTable()
+                    pages = Pages(self, self.result)
+                    while not self.result["Ready"] or page_index < pages.pages:
+                        if page_index < pages.pages:
+                            next_page = pages.fetch(page_index)
+                            for item in next_page:
+                                yield item_func(item)
+                            page_index += 1
+                        if page_index == pages.pages:
+                            self.checkTable()
+                            pages = Pages(self, self.result)
+            else:
+                raise Exception(
+                    "Query ended with an error: " + self.result["ErrorMessage"]
+                )
+
+    def makeArchive(self, file_format, filename):
+        if self.token is None:
+            self.token = login()
+        if self.key is None:
+            self.createQuery()
+        else:
+            self.readQuery()
+        if self.key is not None:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
                 return Archive(
-                    fileformat,
+                    file_format,
                     filename,
                     token=self.token,
                     stations=self.result["CurrentStationIds"],
@@ -210,9 +301,27 @@ class Query:
                     "Query ended with an error: " + self.result["ErrorMessage"]
                 )
 
+    def checkQuery(self):
+        resp = getJson(self.token, cache_site + "/query/" + self.key)
+        if not resp.get("Result") is None:
+            while not resp["Result"]["Ready"]:
+                time.sleep(1)
+                resp = getJson(self.token, cache_site + "/query/" + self.key)
+            self.result = resp["Result"]
+        else:
+            raise Exception("Query didn't respond properly.")
+
+    def checkTable(self):
+        resp = getJson(self.token, cache_site + "/query/" + self.key + "/" + self.table)
+        if not resp.get("Ready") is None:
+            self.result = resp
+        else:
+            raise Exception(
+                "Query didn't respond properly for table request: " + self.table
+            )
+
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
-
         if not resp.get("Result") is None:
             while not resp["Result"]["Ready"]:
                 time.sleep(1)
@@ -220,40 +329,9 @@ class Query:
             if self.table is None:
                 self.result = resp["Result"]
             else:
-                resp = getJson(
-                    self.token, cache_site + "/query/" + self.key + "/" + self.table
-                )
-
-                if not resp.get("Ready") is None:
-                    while not resp["Ready"]:
-                        time.sleep(1)
-                        resp = getJson(
-                            self.token,
-                            cache_site + "/query/" + self.key + "/" + self.table,
-                        )
-                    self.result = resp
-                else:
-                    raise Exception(
-                        "Query didn't respond properly for table request: " + self.table
-                    )
+                self.checkTable()
         else:
             raise Exception("Query didn't respond properly.")
-
-    def createQuery(self):
-        query = {}
-
-        if self.table is not None:
-            query["From"] = [{"Table": self.table}]
-
-        if self.where is not None:
-            query["Where"] = self.where
-
-        resp = postJson(self.token, cache_site + "/query/", query)
-
-        if resp.get("Key") is None:
-            raise Exception("Couldn't create query. Response: " + str(resp))
-        else:
-            self.key = resp["Key"]
 
 
 class Pages:
@@ -304,7 +382,7 @@ class Archive:
         if self.id is None:
             self.createArchive()
 
-        if not self.id is None:
+        if self.id is not None:
             resp = getArchive(self.token, self.id)
             while resp.get("Archived") is None:
                 time.sleep(5)
@@ -377,9 +455,8 @@ class Graph:
                     file.write(chunk)
 
 
-def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
+def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     """Get all water chemistry data for the specified project ID and date range.
-
     Args:
         proj_id:  Int.
         st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
@@ -387,78 +464,68 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None):
         token:    Str. Optional. Valid API access token. If None, will first attempt to read
                   credentials from a '.auth' file in the installation folder. If this fails,
                   will prompt for username and password
-
+        n_jobs:   None or int. Number of threads to use for fetching query results in
+                  parallel. If None (default) the number of threads is equal to the number
+                  of pages in the server response, which is usually a sensible choice
     Returns:
         Dataframe.
     """
+
+    def page_parser(pages_obj, page_no):
+        """Parse a single page from a pages object and return a dataframe."""
+        return json_normalize(pages_obj.fetch(page_no))
+
     # Query API and save result-set to cache
     where = (
         f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
     )
     table = "water_chemistry_output"
-    query = Query(where=where, token=token)
-    pages = query.map(table)
+    query = Query(where=where, token=token, table=table)
+    pages = query.pages()
+    n_pages = pages.pages
+
+    if n_jobs is None:
+        n_jobs = n_pages
 
     # Iterate over cache and build dataframe
-    df_list = []
-    for page in range(pages.pages):
-        resp = pages.fetch(page)
-        df_list.append(json_normalize(resp))
+    df_list = Parallel(n_jobs=n_jobs, prefer="threads")(
+        delayed(page_parser)(pages, page) for page in range(n_pages)
+    )
 
     df = pd.concat(df_list, axis="rows")
-
-    df.dropna(subset=["Value"], inplace=True)
-
-    # Tidy
-    df.drop(
-        ["$type", "Sample.$type", "Parameter.Id", "Sample.Id"],
-        axis="columns",
-        inplace=True,
-    )
-
-    df["Sample.SampleDate"] = pd.to_datetime(df["Sample.SampleDate"])
-
-    # if "Sample.Depth1" not in df.columns:
-    #     df["Sample.Depth1"] = np.nan
-
-    # if "Sample.Depth2" not in df.columns:
-    #     df["Sample.Depth2"] = np.nan
-
-    df.rename(
-        {
-            "Sample.SampleDate": "sample_date",
-            "Sample.Station.Id": "station_id",
-            "Sample.Station.Code": "station_code",
-            "Sample.Station.Name": "station_name",
-            "Sample.Station.Project.Id": "project_id",
-            "Sample.Station.Project.Name": "project_name",
-            "Parameter.Name": "parameter_name",
-            "Parameter.Unit": "unit",
-            "Sample.Depth1": "depth1",
-            "Sample.Depth2": "depth2",
-            "Flag": "flag",
-            "Value": "value",
-        },
-        axis="columns",
-        inplace=True,
-    )
-
-    df = df[
-        [
-            "project_id",
-            "project_name",
-            "station_id",
-            "station_code",
-            "station_name",
-            "sample_date",
-            "depth1",
-            "depth2",
-            "parameter_name",
-            "flag",
-            "value",
-            "unit",
-        ]
+    columns = [
+        "Sample.Station.Project.Id",
+        "Sample.Station.Project.Name",
+        "Sample.Station.Id",
+        "Sample.Station.Code",
+        "Sample.Station.Name",
+        "Sample.SampleDate",
+        "Sample.Depth1",
+        "Sample.Depth2",
+        "Parameter.Name",
+        "Flag",
+        "Value",
+        "Parameter.Unit",
     ]
+
+    df = df[columns]
+
+    df.columns = [
+        "project_id",
+        "project_name",
+        "station_id",
+        "station_code",
+        "station_name",
+        "sample_date",
+        "depth1",
+        "depth2",
+        "parameter_name",
+        "flag",
+        "value",
+        "unit",
+    ]
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
 
     df.sort_values(
         [

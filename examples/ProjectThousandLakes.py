@@ -98,7 +98,7 @@ def create_excel_file(outFile):
 
 
 def generate_maps():
-    meta = am.Query("project_id = " + str(projectInnsjo2019)).map("Metadata")
+    meta = am.Query("project_id = " + str(projectInnsjo2019), table="Metadata").list()
     for m in meta:
         sid = m["_Id"]
         lon = m["_Longitude"]
@@ -118,7 +118,7 @@ def generate_maps():
         height = 300
         resp = requests.get(geoserverUrl + "/wms?" +
                             "service=WMS&version=1.1.0&request=GetMap&" +
-                            "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
+                            "layers=no.norgedigitalt:kartdata,no.niva.aquamonitor:Innsjo_stations&" +
                             "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
                             "&srs=EPSG:" + str(epsg) + "&format=image%2Fpng",
                             stream=True,
@@ -133,7 +133,7 @@ def generate_maps():
 
 
 def generate_map(stationId):
-    result = am.Query("station_id = " + str(stationId)).map("Metadata")
+    result = am.Query("station_id = " + str(stationId), table="Metadata").list()
     print(result.pages)
 
     for i in range(result.pages):
@@ -157,7 +157,7 @@ def generate_map(stationId):
             height = 300
             resp = requests.get(geoserverUrl + "/wms?" +
                                 "service=WMS&version=1.1.0&request=GetMap&" +
-                                "layers=no.norgedigitalt:Kartdata,no.niva.aquamonitor:Innsjo_stations&" +
+                                "layers=no.norgedigitalt:kartdata,no.niva.aquamonitor:Innsjo_stations&" +
                                 "styles=,&bbox=" + bbox + "&width=" + str(width) + "&height=" + str(height) +
                                 "&srs=EPSG:" + str(epsg) + "&format=image%2Fpng",
                                 stream=True,
@@ -171,6 +171,6 @@ def generate_map(stationId):
                 print("Id:" + str(sid) + " error code:" + str(resp.status_code))
 
 
-download_am_file()
-create_excel_file("1000innsjoer_2.xlsx")
+#download_am_file()
+#create_excel_file("1000innsjoer_2.xlsx")
 generate_maps()

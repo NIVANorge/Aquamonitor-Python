@@ -49,11 +49,12 @@ def get_stations(key, year) :
                 station_years[stid] = [year]
                 station_projects[stid] = []
 
+            proj_id = stat["Project"]["Id"]
             if len(station_years[stid]) == 1:
-                station_projects[stid].append(stat["ProjectId"])
+                station_projects[stid].append(proj_id)
 
-            if not stat["ProjectId"] in project_name_count.keys():
-                project_name_count[stat["ProjectId"]] = {"Count": 0}
+            if not proj_id in project_name_count.keys():
+                project_name_count[proj_id] = {"Count": 0}
     am.deleteJson(token, path + key)
 
 
