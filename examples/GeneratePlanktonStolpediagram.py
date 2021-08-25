@@ -3,7 +3,7 @@ __author__ = 'Roar Brenden'
 import aquamonitor as am
 token = am.login()
 site = "mjosovervak"
-where = "project_id=1098 and sample_date>01.01.2018 and sample_date<=31.12.2018 and Plankton.parameter_id=2"
+where = "project_id=1098 and sample_date>01.01.2020 and sample_date<=31.12.2020 and Plankton.parameter_id=2"
 width = 650
 height = 300
 root = "C:/temp/"
