@@ -1,29 +1,22 @@
-__author__ = 'Roar Brenden'
+__author__ = "Roar Brenden"
 
 import aquamonitor as am
 import datetime
 import zipfile
 
 
-def make_shapefile(title, filename, stationids, where) :
-
+def make_shapefile(title, filename, stationids, where):
     data = {
-        "Expires": expires.strftime('%Y.%m.%d'),
+        "Expires": expires.strftime("%Y.%m.%d"),
         "Title": title,
-        "Files":[{
-            "Filename": filename,
-            "ContentType":"application/zip"}],
-        "Definition":{
-            "Format":"shape",
-            "StationIds": stationids,
-            "DataWhere": where
-        }
+        "Files": [{"Filename": filename, "ContentType": "application/zip"}],
+        "Definition": {"Format": "shape", "StationIds": stationids, "DataWhere": where},
     }
     resp = am.createDatafile(token, data)
     return resp["Id"]
 
 
-def download_file(id, filename, path) :
+def download_file(id, filename, path):
     archived = False
     while not archived:
         resp = am.getArchive(token, id)
@@ -33,10 +26,15 @@ def download_file(id, filename, path) :
 
 expires = datetime.date.today() + datetime.timedelta(days=1)
 
-#am.host = "https://test-aquamonitor.niva.no/"
+# am.host = "https://test-aquamonitor.niva.no/"
+# am.host = "http://localhost:59265"    # AquaServices
+# am.archive_site = ""
+# am.aqua_site = ""
+# am.api_site = ""
+
 token = am.login()
 
-filename = 'Referanseelver2017.zip'
+filename = "Referanseelver2017.zip"
 projectId = 11226
 
 where = "project_id=" + str(projectId)
@@ -49,13 +47,13 @@ print(stationids)
 
 archive = make_shapefile("Referanseelver", filename, stationids, where)
 
-root = 'c:/Temp/'
+root = "c:/Temp/"
 path = root + filename
 
 download_file(archive, filename, path)
 
 am.deleteArchive(token, archive)
 
-zipFile = zipfile.ZipFile(path, 'r')
+zipFile = zipfile.ZipFile(path, "r")
 zipFile.extractall(root)
 zipFile.close()
