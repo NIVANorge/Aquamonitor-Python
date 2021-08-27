@@ -17,6 +17,7 @@ from pandas import json_normalize
 
 host = "https://aquamonitor.niva.no/"
 aqua_site = "AquaServices"
+api_site = "AquaServices"
 archive_site = "AquaServices"
 cache_site = "AquaCache"
 
@@ -123,12 +124,12 @@ def deleteJson(token, path):
 
 
 def getProject(token, projectId):
-    projectsurl = "AquaServices/api/projects/" + str(projectId)
+    projectsurl = api_site + "/api/projects/" + str(projectId)
     return getJson(token, projectsurl)
 
 
 def getStations(token, projectId):
-    stationsurl = "AquaServices/api/projects/" + str(projectId) + "/stations/"
+    stationsurl = api_site + "/api/projects/" + str(projectId) + "/stations/"
     return getJson(token, stationsurl)
 
 
