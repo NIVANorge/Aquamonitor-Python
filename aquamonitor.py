@@ -587,18 +587,29 @@ def get_projects(token=None):
     return df
 
 
-def get_project_stations(proj_id, token=None):
+def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
     """Get stations associated with a specific project.
 
     Args:
-        proj_id: Int. Project ID for project of interest
-        token:   Str. Optional. Valid API access token. If None, will first attempt to read
-                 credentials from a '.auth' file in the installation folder. If this fails,
-                 will prompt for username and password
+        proj_id:       Int. Project ID for project of interest
+        token:         Str. Optional. Valid API access token. If None, will first attempt to read
+                       credentials from a '.auth' file in the installation folder. If this fails,
+                       will prompt for username and password
+        return_coords: Bool. Whether to include latitudes and longitudes for stations in the result.
+                       Default True. Setting to False will make the query significantly faster
+        n_jobs:        None or int. Number of threads to use for fetching query results in
+                       parallel. If None (default) the number of threads is equal to the number
+                       of pages in the server response, which is usually a sensible choice
 
     Returns:
         Dataframe
     """
+
+    def page_parser(pages_obj, page_no):
+        """Parse a single page from a pages object and return a dataframe."""
+        return json_normalize(pages_obj.fetch(page_no))
+
+    # Get basic station data
     if not token:
         token = login()
 
@@ -621,5 +632,27 @@ def get_project_stations(proj_id, token=None):
     df = df[["project_id", "station_id", "station_code", "station_name", "type"]]
     df.sort_values(["project_id", "station_id"], inplace=True)
     df.reset_index(inplace=True, drop=True)
+
+    if return_coords:
+        where = f"project_id = {proj_id}"
+        table = "metadata"
+        query = Query(where=where, token=token, table=table)
+        pages = query.pages()
+        n_pages = pages.pages
+
+        if n_jobs is None:
+            n_jobs = n_pages
+
+        # Iterate over cache and build dataframe
+        df_list = Parallel(n_jobs=n_jobs, prefer="threads")(
+            delayed(page_parser)(pages, page) for page in range(n_pages)
+        )
+
+        coord_df = pd.concat(df_list, axis="rows")
+        coord_df = coord_df[["_Id", "_Longitude", "_Latitude"]]
+        coord_df.columns = ["station_id", "longitude", "latitude"]
+
+        # Join
+        df = pd.merge(df, coord_df, on="station_id", how="left")
 
     return df
