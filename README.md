@@ -36,4 +36,4 @@ df = am.get_project_chemistry(proj_id, st_dt, end_dt, token=token, approved=True
 print(df.head())
 ```
 
-See also the `examples` folder.
+See also the `examples` folder and the Jupyter notebook [here](https://nbviewer.org/github/NIVANorge/Aquamonitor-Python/blob/master/examples/query_chem.ipynb).
