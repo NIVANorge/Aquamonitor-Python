@@ -38,8 +38,9 @@ def requestService(url, params):
 
 def login(username=None, password=None):
     """Login to Aquamonitor with your username and password. For security, avoid passing the args
-        directly. The function will first attempt to read stored credentials from a '.auth' file
-        and, if this is not possible, it will prompt for your username and password.
+       directly. The function will first attempt to read stored credentials from two environment
+       variables: AQUAMONITOR_USER and AQUAMONITOR_PASSWORD. If this is not possible, it will
+       prompt for your username and password.
 
     Args:
         username: Str. Optional. Aquamonitor username
@@ -49,16 +50,10 @@ def login(username=None, password=None):
         Str. Access token valid for one day.
     """
     if username is None:
-        authfile = os.path.join(os.path.dirname(__file__), ".auth")
-        if os.path.isfile(authfile):
-            config = configparser.RawConfigParser()
-            try:
-                config.read(authfile)
-                username = config.get("Auth", "username")
-                password = config.get("Auth", "password")
-            except Exception as ex:
-                raise Exception("Couldn't read username/password from .auth file.")
-        else:
+        try:
+            username = os.environ["AQUAMONITOR_USER"]
+            password = os.environ["AQUAMONITOR_PASSWORD"]
+        except KeyError:
             print("Please enter your credentials.")
             username = getpass.getpass(prompt="Username: ")
             password = getpass.getpass(prompt="Password: ")
@@ -475,6 +470,9 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     def page_parser(pages_obj, page_no):
         """Parse a single page from a pages object and return a dataframe."""
         return json_normalize(pages_obj.fetch(page_no))
+
+    if not token:
+        token = login()
 
     # Query API and save result-set to cache
     where = (
