@@ -654,3 +654,42 @@ def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
         df = pd.merge(df, coord_df, on="station_id", how="left")
 
     return df
+
+def get_water_parameters(name=None, token=None):
+    """Get list of water chemistry parameters.
+
+    Args:
+         name - Constrain list to those parameters starting with the given text.
+                If not specified return all parameters.
+         token - User credentials. If not specified will try to get them.
+    """
+    
+    if token is None:
+        login()
+
+    if name is None:
+        name = "%"
+
+    resp = getJson(token, aqua_site + f"/api/query/parameter?datatype=Water&name={name}")
+    df = json_normalize(resp)
+
+    # Tidy
+    df.rename(
+        {
+            "Id": "id",
+            "Name": "name",
+            "Unit": "unit"
+        },
+        inplace=True,
+        axis="columns",
+    )
+    df = df[
+        [
+            "id",
+            "name",
+            "unit"
+        ]
+    ]
+    df.sort_values(["name"], inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    return df
