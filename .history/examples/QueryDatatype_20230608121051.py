@@ -1,5 +1,5 @@
 __author__ = 'Roar Brenden'
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import datetime as dt
 
 #am.host = "https://test-aquamonitor.niva.no/"

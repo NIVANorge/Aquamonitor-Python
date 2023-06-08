@@ -1,7 +1,9 @@
 import aquamonitor.aquamonitor as am
 import pandas as pd
 
-def openQuery(token, station_id, year):
+#am.host = "https://test-aquamonitor.niva.no/"
+
+def openQuery(station_id, year):
     """
     Create a new query for water chemistry input values for the station in a specific year.
     :param station_id: Nivadatabase station_id
@@ -10,8 +12,7 @@ def openQuery(token, station_id, year):
     """
     query = am.Query(where=f"sample_date>=01.01.{year} and sample_date<=31.12.{year}",
                      stations=[station_id],
-                     table="water_chemistry_input",
-                     token=token)
+                     table="water_chemistry_input")
     query.createQuery()
     return query.key
 
@@ -61,12 +62,11 @@ def disapproveValues(name, dates, depth):
     for value in filter(lambda wc: wc["Method"].get("Name") == name
                                    and wc["Sample"]["SampleDate"] in dates
                                    and wc["Sample"]["Depth1"] == depth,
-                        am.Query(token=token, key=key).list()):
+                        am.Query(key=key).list()):
         if value["Approved"]:
             value["Approved"] = False
-            value["Remark"] = "UTA: Tas ut"
-            #print(f"/api/waterchemistry/{value['Id']}")
-            am.putJson(token, am.aqua_site + f"/api/waterchemistry/{value['Id']}", value)
+            value["Remark"] = "OKA: Tas ut"
+            print(am.putJson(token, am.aqua_site + f"/api/waterchemistry/{value['Id']}", value))
 
 def insertValues(original, method_id, pairs):
     """
@@ -76,20 +76,20 @@ def insertValues(original, method_id, pairs):
     :param pairs: Array of date/value pairs
     :return:
     """
-    for value in am.Query(token=token, key=key).list():
+    for value in am.Query(key=key).list():
         for pair in pairs:
             if value["Method"]["Name"] == original \
                               and value["Sample"]["SampleDate"] == pair["Date"]:
                 if value["Approved"]:
                     value["Approved"] = False
-                    value["Remark"] = "UTA: Erstattet med korrigert verdi"
+                    value["Remark"] = "OKA: Erstattet med korrigert verdi"
                     print(am.putJson(token, am.aqua_site + f"/api/waterchemistry/{value['Id']}", value))
                     #print(value)
                 new_value = {"Sample": {"Id": value["Sample"]["Id"]},
                              "Method": {"Id": method_id},
                              "Value": pair["Value"],
                              "Approved": True}
-                am.postJson(token, am.aqua_site + "/api/waterchemistry", new_value)
+                print(am.postJson(token, am.aqua_site + "/api/waterchemistry", new_value))
                 #print(new_value)
 
 def iterateMethodForDisapprovement(col, name, depth):
@@ -104,13 +104,11 @@ def iterateMethodForDisapprovement(col, name, depth):
     depth_col = 2
     dates=[]
     for idx, row in table.iterrows():
-        if row.iloc[depth_col] == depth and not pd.isna(row.iloc[col]):
-            dt = row.iloc[date_col]
+        if row[depth_col] == depth and not pd.isna(row[col]):
+            dt = row[date_col]
             #dates.append(f"{dt[6:10]}-{dt[3:5]}-{dt[:2]}T{dt[-8:]}Z") # Given as a String
             dates.append(dt.strftime("%Y-%m-%dT%XZ")) # Given as Timestamp
-    print(f"Number disapproved={len(dates)}")
-    if dates:
-      disapproveValues(name, dates, depth)
+    disapproveValues(name, dates, depth)
 
 def iterateMethodForInsert(col, original, method_id):
     pairs=[]
@@ -120,19 +118,21 @@ def iterateMethodForInsert(col, original, method_id):
             pairs.append({"Date": row[date_col].strftime("%Y-%m-%dT%XZ"), "Value": round(row[col], 3)})
     insertValues(original, method_id, pairs)
 
-year = "2023"
+year = "2016"
+#station_name = "Lundevann"
 station_id = 65381
+#ph_korr_method_id = 35408
 token = am.login()
-key = openQuery(token, station_id, year)
-table = pd.read_excel("C:\\Users\\rbr\\OneDrive - NIVA\\Prosjekter\\Logger - Nævestadfjorden - Uta\\Nævestad_2023_inklFigs.xlsx", 
-                      "WaterChemistry (2)", header=2)
+key = openQuery(station_id, year)
+#folder_name = "_Storelva-Nævestadfjorden\\_Lundevann\\Korreksjoner_ikke oppdatert i AM"
 
-iterateMethodForDisapprovement(4, "Fluorescens", 1)
-iterateMethodForDisapprovement(4, "Fluorescens", 2.5)
-iterateMethodForDisapprovement(4, "Fluorescens", 4)
-iterateMethodForDisapprovement(4, "Fluorescens", 5.5)
-iterateMethodForDisapprovement(4, "Fluorescens", 7)
-iterateMethodForDisapprovement(4, "Fluorescens", 8.5)
+#table = pd.read_excel("K:\\Prosjekter\\Land-sea interactions\\_Loggedata fra LOI-stasjonene\\" +
+#                      f"{folder_name}\\{station_name}_sensordata_{year}_inkl figs.xlsx",
+#                      "Sensordata", header=1)
+table = pd.read_excel("C:\\temp\\Verdier som kan fjernes_skjules i Aquamonitor.xlsx",
+                      "Nævestadfjorden", header=1)
+
+#iterateMethod(9, "Temp")
 #iterateMethod(6, "Kond")
 #iterateMethod(8, "pH")
 #iterateMethod(10, "Temp")

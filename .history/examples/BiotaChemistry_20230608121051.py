@@ -1,4 +1,4 @@
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 
 #am.host = "https://test-aquamonitor.niva.no/"
 

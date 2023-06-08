@@ -1,6 +1,6 @@
 __author__ = 'Roar Brenden'
 
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import pandas as pd
 from pandas import ExcelWriter as xlsWriter
 import requests
@@ -23,7 +23,7 @@ geoserverUrl = "https://aquamonitor.niva.no/geoserver"
 
 def download_am_file():
     am.Query("project_id=" + str(projectInnsjo2019))\
-        .export("excel", "am1000sjoer.xlsx")\
+        .makeArchive("excel", "am1000sjoer.xlsx")\
         .download("c:/Innsjo2019/")
 
 
