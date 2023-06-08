@@ -274,6 +274,31 @@ class Query:
                 raise Exception(
                     "Query ended with an error: " + self.result["ErrorMessage"]
                 )
+            
+
+    def getDataFrame(self, n_jobs=None):
+        """Loops over Pages returned by Query, and builds a list
+            Args:
+            n_jobs - Number of threads to use for downloading result.
+                     If None is specified it's set to number of pages in the result.
+        """
+        def page_parser(pages_obj, page_no):
+            """Parse a single page from a pages object and return a dataframe."""
+            return json_normalize(pages_obj.fetch(page_no))
+
+        pages = self.pages()
+        n_pages = pages.pages
+
+        if n_jobs is None:
+            n_jobs = n_pages
+
+        # Iterate over cache and build dataframe
+        list = Parallel(n_jobs=n_jobs, prefer="threads")(
+            delayed(page_parser)(pages, page) for page in range(n_pages)
+        )
+        df = pd.concat(list, axis="rows")
+        return df
+    
 
     def makeArchive(self, file_format, filename):
         if self.token is None:
@@ -466,11 +491,6 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     Returns:
         Dataframe.
     """
-
-    def page_parser(pages_obj, page_no):
-        """Parse a single page from a pages object and return a dataframe."""
-        return json_normalize(pages_obj.fetch(page_no))
-
     if not token:
         token = login()
 
@@ -480,18 +500,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     )
     table = "water_chemistry_output"
     query = Query(where=where, token=token, table=table)
-    pages = query.pages()
-    n_pages = pages.pages
-
-    if n_jobs is None:
-        n_jobs = n_pages
-
-    # Iterate over cache and build dataframe
-    df_list = Parallel(n_jobs=n_jobs, prefer="threads")(
-        delayed(page_parser)(pages, page) for page in range(n_pages)
-    )
-
-    df = pd.concat(df_list, axis="rows")
+    df = query.getDataFrame(n_jobs)
     columns = [
         "Sample.Station.Project.Id",
         "Sample.Station.Project.Name",
@@ -603,10 +612,6 @@ def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
         Dataframe
     """
 
-    def page_parser(pages_obj, page_no):
-        """Parse a single page from a pages object and return a dataframe."""
-        return json_normalize(pages_obj.fetch(page_no))
-
     # Get basic station data
     if not token:
         token = login()
@@ -635,18 +640,7 @@ def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
         where = f"project_id = {proj_id}"
         table = "metadata"
         query = Query(where=where, token=token, table=table)
-        pages = query.pages()
-        n_pages = pages.pages
-
-        if n_jobs is None:
-            n_jobs = n_pages
-
-        # Iterate over cache and build dataframe
-        df_list = Parallel(n_jobs=n_jobs, prefer="threads")(
-            delayed(page_parser)(pages, page) for page in range(n_pages)
-        )
-
-        coord_df = pd.concat(df_list, axis="rows")
+        coord_df = query.getDataFrame(n_jobs)
         coord_df = coord_df[["_Id", "_Longitude", "_Latitude"]]
         coord_df.columns = ["station_id", "longitude", "latitude"]
 
@@ -693,3 +687,22 @@ def get_water_parameters(name=None, token=None):
     df.sort_values(["name"], inplace=True)
     df.reset_index(inplace=True, drop=True)
     return df
+
+def get_station_attributes(stat_ids, token = None):
+    """Get table of station attributes for a set of station id's.
+
+    Args:
+        stat_ids: Array of station id's.
+        token: User credentials. If not specified will try to get them.
+               User must have read access to the stations provided.
+    """
+
+    if token is None:
+        token = login()
+    
+    query = Query(stations=stat_ids, token=token, table="station_attributes")
+    df = query.getDataFrame()
+    df_pivot = df.pivot(index='Station.Id', columns='Attribute.Name', values=['NumericValue','TextValue'])
+    df_pivot.dropna(axis=1, how='all', inplace=True)
+    df_pivot = pd.merge(df_pivot['TextValue'], df_pivot['NumericValue'], left_on='Station.Id', right_on='Station.Id')
+    return df_pivot
