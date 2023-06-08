@@ -1,4 +1,4 @@
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import requests
 
 #am.host = "http://localhost:65493/"

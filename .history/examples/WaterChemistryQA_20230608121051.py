@@ -1,4 +1,4 @@
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import pandas as pd
 
 #am.host = "https://test-aquamonitor.niva.no/"

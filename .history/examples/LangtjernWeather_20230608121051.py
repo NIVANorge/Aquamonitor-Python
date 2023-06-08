@@ -1,7 +1,7 @@
 __author__ = 'Roar Brenden'
 
 
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import datetime
 
 #root = "/Users/roar/"

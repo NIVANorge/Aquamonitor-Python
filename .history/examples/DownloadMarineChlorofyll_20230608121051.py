@@ -4,7 +4,7 @@
 #
 # From wc_parameter_definitions : Water.parameter_id = 261
 
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import datetime
 
 # We need some additional functions

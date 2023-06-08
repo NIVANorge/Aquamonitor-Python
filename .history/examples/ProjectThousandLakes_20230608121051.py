@@ -1,6 +1,6 @@
 __author__ = 'Roar Brenden'
 
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import pandas as pd
 from pandas import ExcelWriter as xlsWriter
 import requests

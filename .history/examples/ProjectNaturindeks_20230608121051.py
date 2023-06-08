@@ -1,4 +1,4 @@
-import aquamonitor.aquamonitor as am
+import aquamonitor as am
 import requests as req
 import json
 import pandas as pd
