@@ -19,7 +19,7 @@ import aquamonitor as am
 
 
 #am.Query("project_id = 9566 and sample_date > 01.01.2016 and sample_date <= 31.12.2016")\
-#            .makeArchive("excel", "Mjosa_2016.xlsx")\
+#            .export("excel", "Mjosa_2016.xlsx")\
 #            .download("/Users/roar/Mjosa/")
 
 pages = am.Query("project_id = 12433 and sample_date > 01.01.2019 and sample_date <= 31.12.2019",

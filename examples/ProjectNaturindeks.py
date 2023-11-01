@@ -10,7 +10,7 @@ from pandas import ExcelWriter as xlsWriter
 def downloadNIVA_PTI():
     # PTI -> plankton.parameter_id = 7
     am.Query(where="Plankton.parameter_id=7") \
-        .makeArchive(fileformat="excel", filename="Nivabase-plankton.xlsx") \
+        .export(format="excel", filename="Nivabase-plankton.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
@@ -20,30 +20,30 @@ def downloadNIVA_Begroing():
     # HBI2 -> begroing.parameter_id = 64
 
     am.Query(where="Begroing.parameter_id in (1,2,64)") \
-        .makeArchive(fileformat="excel", filename="Nivabase-begroing.xlsx") \
+        .export(format="excel", filename="Nivabase-begroing.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
 def downloadNIVA_ASPT():
     am.Query(where="Bunndyr.parameter_id = 1") \
-        .makeArchive(fileformat="excel", filename="Nivabase-bunndyr.xlsx") \
+        .export(format="excel", filename="Nivabase-bunndyr.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
 def downloadNIVA_Blotbunn():
     am.Query(where="Blotbunn.parameter_id in (111,26,15,11,116)") \
-        .makeArchive(fileformat="excel", filename="Nivabase-blotbunn.xlsx") \
+        .export(format="excel", filename="Nivabase-blotbunn.xlsx") \
         .download(path="C:/Naturindeks/")
 
 
 def downloadNIVA_Hardbunn():
     am.Query(where="Hardbunn.parameter_id in (13,189,190,191,187,188,184,185,186,113)") \
-        .makeArchive(fileformat="excel", filename="Nivabase-hardbunn.xlsx") \
+        .export(format="excel", filename="Nivabase-hardbunn.xlsx") \
         .download(path="C:/Naturindeks/")
 
 def downloadNIVA_MarinChla():
     am.Query(where="station_type_id=3 and Water.parameter_id = 261") \
-        .makeArchive(fileformat="excel", filename="Nivabase-plankton.xlsx") \
+        .export(format="excel", filename="Nivabase-plankton.xlsx") \
         .download(path="C:/Naturindeks/")
 
 

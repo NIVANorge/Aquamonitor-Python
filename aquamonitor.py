@@ -1,19 +1,17 @@
 __author__ = "Roar Brenden"
 
-import configparser
 import datetime
 import getpass
 import json
 import os
 import time
 from xml.dom import minidom
-
-import numpy as np
 import pandas as pd
 import pyexpat
 import requests
 from joblib import Parallel, delayed
 from pandas import json_normalize
+from yaspin import yaspin
 
 host = "https://aquamonitor.niva.no/"
 aqua_site = "AquaServices"
@@ -275,7 +273,6 @@ class Query:
                     "Query ended with an error: " + self.result["ErrorMessage"]
                 )
             
-
     def getDataFrame(self, n_jobs=None):
         """Loops over Pages returned by Query, and builds a list
             Args:
@@ -292,15 +289,22 @@ class Query:
         if n_jobs is None:
             n_jobs = n_pages
 
-        # Iterate over cache and build dataframe
-        list = Parallel(n_jobs=n_jobs, prefer="threads")(
-            delayed(page_parser)(pages, page) for page in range(n_pages)
-        )
-        df = pd.concat(list, axis="rows")
-        return df
+        with yaspin(text="Waiting for Query to finish...").white.bold.shark.on_blue:
+            # Iterate over cache and build dataframe
+            list = Parallel(n_jobs=n_jobs, prefer="threads")(
+                delayed(page_parser)(pages, page) for page in range(n_pages)
+            )
+            df = pd.concat(list, axis="rows")
+            return df
     
 
-    def makeArchive(self, file_format, filename):
+    def export(self, format, filename, where = None):
+        """Create a new Archive on server, containing the export file.
+           Args:
+           format: One of AquaMonitor's export formats: excel, csv etc.
+           filename: Filename to use for the export.
+           where: If it differs from the one used to query stations.
+        """
         if self.token is None:
             self.token = login()
         if self.key is None:
@@ -311,11 +315,11 @@ class Query:
             self.waitQuery()
             if self.result.get("ErrorMessage") is None:
                 return Archive(
-                    file_format,
+                    format,
                     filename,
                     token=self.token,
                     stations=self.result["CurrentStationIds"],
-                    where=self.where,
+                    where=self.where if where is None else where,
                 )
             else:
                 raise Exception(
@@ -344,13 +348,14 @@ class Query:
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
         if not resp.get("Result") is None:
-            while not resp["Result"]["Ready"]:
-                time.sleep(1)
-                resp = getJson(self.token, cache_site + "/query/" + self.key)
-            if self.table is None:
-                self.result = resp["Result"]
-            else:
-                self.checkTable()
+            with yaspin(text="Waiting for Query...").white.bold.shark.on_blue:
+                while not resp["Result"]["Ready"]:
+                    time.sleep(1)
+                    resp = getJson(self.token, cache_site + "/query/" + self.key)
+                if self.table is None:
+                    self.result = resp["Result"]
+                else:
+                    self.checkTable()
         else:
             raise Exception("Query didn't respond properly.")
 
@@ -404,15 +409,19 @@ class Archive:
             self.createArchive()
 
         if self.id is not None:
-            resp = getArchive(self.token, self.id)
-            while resp.get("Archived") is None:
-                time.sleep(5)
+            with yaspin(text="Waiting for Export to finish...").white.bold.shark.on_blue:
                 resp = getArchive(self.token, self.id)
+                while resp.get("Archived") is None:
+                    time.sleep(5)
+                    resp = getArchive(self.token, self.id)
 
-            for file in resp["Files"]:
-                downloadArchive(
-                    self.token, self.id, file["FileName"], path + file["FileName"]
-                )
+                if not(path.endswith("/") or path.endswith("\\")) :
+                    path += os.sep
+
+                for file in resp["Files"]:
+                    downloadArchive(
+                        self.token, self.id, file["FileName"], path + file["FileName"]
+                    )
         else:
             print("Couldn't create archive.")
 
@@ -706,3 +715,16 @@ def get_station_attributes(stat_ids, token = None):
     df_pivot.dropna(axis=1, how='all', inplace=True)
     df_pivot = pd.merge(df_pivot['TextValue'], df_pivot['NumericValue'], left_on='Station.Id', right_on='Station.Id')
     return df_pivot
+
+def get_station_types(token = None):
+    """Get list of all station types. 
+    
+    Args:
+        token: User credentials. If not specified will try to get them.
+               No specific requirement to the user.
+    """
+
+    if token is None:
+        token = login()
+
+    return getJson(token, aqua_site + "/api/stationtypes")
