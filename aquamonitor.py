@@ -728,4 +728,18 @@ def get_station_types(token = None):
     if token is None:
         token = login()
 
-    return getJson(token, aqua_site + "/api/stationtypes")
+    resp = getJson(token, aqua_site + "/api/stationtypes")
+    df = json_normalize(resp)
+
+    # Tidy
+    df.rename(
+        {
+            "Id": "id",
+            "Text": "text"
+        },
+        inplace=True,
+        axis="columns",
+    )
+    df.sort_values(["text"], inplace=True)
+    df.reset_index(inplace=True, drop=True)
+    return df
