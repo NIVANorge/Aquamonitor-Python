@@ -289,7 +289,7 @@ class Query:
         if n_jobs is None:
             n_jobs = n_pages
 
-        with yaspin(text="Waiting for Query to finish...").white.bold.shark.on_blue:
+        with yaspin(text="Waiting for Query to finish...").white.bold.shark:
             # Iterate over cache and build dataframe
             list = Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(page_parser)(pages, page) for page in range(n_pages)
@@ -348,7 +348,7 @@ class Query:
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
         if not resp.get("Result") is None:
-            with yaspin(text="Waiting for Query...").white.bold.shark.on_blue:
+            with yaspin(text="Waiting for Query...").white.bold.shark:
                 while not resp["Result"]["Ready"]:
                     time.sleep(1)
                     resp = getJson(self.token, cache_site + "/query/" + self.key)
@@ -409,7 +409,7 @@ class Archive:
             self.createArchive()
 
         if self.id is not None:
-            with yaspin(text="Waiting for Export to finish...").white.bold.shark.on_blue:
+            with yaspin(text="Waiting for Export to finish...").white.bold.shark:
                 resp = getArchive(self.token, self.id)
                 while resp.get("Archived") is None:
                     time.sleep(5)
