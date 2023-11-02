@@ -668,7 +668,7 @@ def get_water_parameters(name=None, token=None):
     """
     
     if token is None:
-        login()
+        token = login()
 
     if name is None:
         name = "%"
