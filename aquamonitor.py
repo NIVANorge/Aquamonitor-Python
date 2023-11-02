@@ -12,7 +12,7 @@ import requests
 from joblib import Parallel, delayed
 from pandas import json_normalize
 from yaspin import yaspin
-from yaspin.spinners import spinners
+from yaspin.spinners import Spinners
 
 host = "https://aquamonitor.niva.no/"
 aqua_site = "AquaServices"
@@ -290,7 +290,7 @@ class Query:
         if n_jobs is None:
             n_jobs = n_pages
 
-        with yaspin(spinner=spinners.shark, text="Waiting for Query to finish..."):
+        with yaspin(spinner=Spinners.shark, text="Waiting for Query to finish..."):
             # Iterate over cache and build dataframe
             list = Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(page_parser)(pages, page) for page in range(n_pages)
@@ -349,7 +349,7 @@ class Query:
     def waitQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
         if not resp.get("Result") is None:
-            with yaspin(spinner=spinners.shark, text="Waiting for Query..."):
+            with yaspin(spinner=Spinners.shark, text="Waiting for Query..."):
                 while not resp["Result"]["Ready"]:
                     time.sleep(1)
                     resp = getJson(self.token, cache_site + "/query/" + self.key)
@@ -410,7 +410,7 @@ class Archive:
             self.createArchive()
 
         if self.id is not None:
-            with yaspin(spinner=spinners.shark, text="Waiting for Export to finish..."):
+            with yaspin(spinner=Spinners.shark, text="Waiting for Export to finish..."):
                 resp = getArchive(self.token, self.id)
                 while resp.get("Archived") is None:
                     time.sleep(5)
