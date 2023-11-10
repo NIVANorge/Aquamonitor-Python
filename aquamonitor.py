@@ -152,6 +152,26 @@ def downloadFile(token: str, url: str, path: str) -> None:
 def downloadArchive(token, id, file, path):
     downloadFile(token, archive_site + "/files/archive/" + id + "/" + file, path)
 
+def geoQuery(layer: str, token: str = None, filter: str = None) :
+    """ Queries Geoserver for stations. The arguments specifies a layer within 
+        Geoserver that should be used to get the area to query within. And the filter
+        is to limit it further.
+
+        The layer should be in namespace: no.niva
+        The stations are fetched from layer: no.niva.aquamonitor:Intern_stations
+
+        The returned value is a json with the fields:
+        STATION_TYPE_ID,FULL_STATION_NAME,LONGITUDE,SAMPLE_POINT_ID,STATION_CODE,
+        LATITUDE,STATION_ID,PROJECT_ID,PROJECT_NAME,STATION_TYPE,STATION_NAME 
+    """
+    if token is None:
+        token = login()
+
+    if filter is None:
+        filter = "0=0"
+    
+    ret = getJson(token, aqua_site + "/Gis/Query.ashx?q=no.niva.aquamonitor/Intern_stations/filter/no.niva/" + layer + "/" + filter + "/features.json")
+    return ret.get("features")
 
 class Query:
     token = None
