@@ -429,6 +429,9 @@ class Archive:
         if self.id is None:
             self.createArchive()
 
+        if not(path.endswith("/") or path.endswith("\\")) :
+            path += os.sep
+
         if self.id is not None:
             with yaspin(spinner=Spinners.shark, text="Waiting for Export to finish..."):
                 resp = getArchive(self.token, self.id)
@@ -436,8 +439,8 @@ class Archive:
                     time.sleep(5)
                     resp = getArchive(self.token, self.id)
 
-                if not(path.endswith("/") or path.endswith("\\")) :
-                    path += os.sep
+                if not resp.get("ErrorMessage") is None:
+                    raise Exception(resp["ErrorMessage"])
 
                 for file in resp["Files"]:
                     downloadArchive(
