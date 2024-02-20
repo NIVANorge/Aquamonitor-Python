@@ -534,40 +534,38 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     table = "water_chemistry_output"
     query = Query(where=where, token=token, table=table)
     df = query.getDataFrame(n_jobs)
-    columns = [
-        "Sample.Station.Project.Id",
-        "Sample.Station.Project.Name",
-        "Sample.Station.Id",
-        "Sample.Station.Code",
-        "Sample.Station.Name",
-        "Sample.SampleDate",
-        "Sample.Depth1",
-        "Sample.Depth2",
-        "Parameter.Name",
-        "Flag",
-        "Value",
-        "Parameter.Unit",
-    ]
 
-    df = df[columns]
-
-    df.columns = [
-        "project_id",
-        "project_name",
-        "station_id",
-        "station_code",
-        "station_name",
-        "sample_date",
-        "depth1",
-        "depth2",
-        "parameter_name",
-        "flag",
-        "value",
-        "unit",
-    ]
+    df.rename(columns = {
+        "Sample.Station.Project.Id": "project_id",
+        "Sample.Station.Project.Name": "project_name",
+        "Sample.Station.Id": "station_id",
+        "Sample.Station.Code": "station_code",
+        "Sample.Station.Name": "station_name",
+        "Sample.SampleDate": "sample_date",
+        "Sample.Depth1": "depth1",
+        "Sample.Depth2": "depth2",
+        "Parameter.Name": "parameter_name",
+        "Flag": "flag",
+        "Value": "value",
+        "Parameter.Unit": "unit"
+    }, inplace = True)
 
     df["sample_date"] = pd.to_datetime(df["sample_date"])
 
+    df = df.reindex(df.columns.union(["project_id",
+            "project_name",
+            "station_id",
+            "station_code",
+            "station_name",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+            "flag",
+            "value",
+            "unit"   
+        ], sort= False), axis="columns")
+    
     df.sort_values(
         [
             "project_id",
