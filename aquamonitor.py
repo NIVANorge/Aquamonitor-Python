@@ -308,7 +308,10 @@ class Query:
         n_pages = pages.pages
 
         if n_jobs is None:
-            n_jobs = n_pages
+            if n_pages > 0: 
+                n_jobs = n_pages
+            else:
+                n_jobs = 1
 
         with yaspin(spinner=Spinners.shark, text="Waiting for Query to finish..."):
             # Iterate over cache and build dataframe
@@ -534,6 +537,9 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     table = "water_chemistry_output"
     query = Query(where=where, token=token, table=table)
     df = query.getDataFrame(n_jobs)
+
+    if "Flag" not in df.columns:
+        df["Flag"] = None
 
     df.rename(columns = {
         "Sample.Station.Project.Id": "project_id",
