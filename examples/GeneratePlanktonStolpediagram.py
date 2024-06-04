@@ -8,7 +8,7 @@ width = 650
 height = 300
 root = "C:/temp/"
 
-for station_id in am.Query(where=where).list():
+for station_id in am.Query(where=where, token=token).list():
     file = root + "plankton_" + str(station_id) + ".png"
     am.Graph(width, height, token=token, site=site, graph='/Graph/Stolpediagram.ashx', stationId=station_id,
              parameter='Plankton;2', where=where)\
