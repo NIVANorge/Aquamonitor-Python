@@ -18,7 +18,7 @@ import aquamonitor as am
 token = am.login()
 
 # List all projects
-proj_df = am.get_projects(token=token)
+proj_df = am.get_projects(token)
 print(f"{len(proj_df)} projects in the database.")
 print(proj_df.head())
 
