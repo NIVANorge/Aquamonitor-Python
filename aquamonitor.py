@@ -587,6 +587,16 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
 
     return df
 
+def extract_o_numbers(row):
+    """Return a commaseparated list of o-numbers.
+       Based on the json structure: O_Numbers[{Id, Number}]
+    """
+    numbers = row["O_Numbers"]
+    if isinstance(numbers, float):
+        return
+
+    return ",".join([n["Number"] for n in numbers])
+
 
 def get_projects(token=None):
     """Get full list of projects in the Nivadatabase/Aquamonitor.
@@ -606,12 +616,12 @@ def get_projects(token=None):
     df = json_normalize(resp)
 
     # Tidy
+    df["project_code"] = df.apply(extract_o_numbers, axis=1)
     df.rename(
         {
             "Id": "project_id",
             "Name": "project_name",
             "Description": "description",
-            "Number": "project_code",
         },
         inplace=True,
         axis="columns",
@@ -624,7 +634,6 @@ def get_projects(token=None):
             "description",
         ]
     ]
-
     df.sort_values(["project_id"], inplace=True)
     df.reset_index(inplace=True, drop=True)
 
@@ -709,7 +718,7 @@ def get_water_parameters(name=None, token=None):
         {
             "Id": "id",
             "Name": "name",
-            "Unit": "unit"
+            "Unit": "unit",
         },
         inplace=True,
         axis="columns",
