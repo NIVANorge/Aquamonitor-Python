@@ -704,7 +704,7 @@ def long_to_wide(df_long):
     if len(d) > 0:
         raise ValueError("Found duplicated data")
     else:
-        df_wide = df.pivot(
+        df_wide = df_long.pivot(
                 columns=["parameter_name"],
                 index=[
                     "sample_date",
