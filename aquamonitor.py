@@ -512,6 +512,39 @@ class Graph:
                     file.write(chunk)
 
 
+def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None):
+    """Get all water chemistry data for the specified project ID and date range.
+    Args:
+        proj_id:  Int.
+        st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
+        end_dt:   Str. End of period of interest in format 'dd.mm.yyyy'
+        token:    Str. Optional. Valid API access token. If None, will first attempt to read
+                  credentials from a '.auth' file in the installation folder. If this fails,
+                  will prompt for username and password
+        n_jobs:   None or int. Number of threads to use for fetching query results in
+                  parallel. If None (default) the number of threads is equal to the number
+                  of pages in the server response, which is usually a sensible choice
+    Returns:
+        Dataframe.
+    """
+    if not token:
+        token = login()
+
+    # Query API and save result-set to cache
+    where = (
+        f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
+    )
+    table = "water_chemistry_input"
+    query = Query(where=where, token=token, table=table)
+
+    df = query.getDataFrame(n_jobs)
+
+    if "Flag" not in df.columns:
+        df["Flag"] = None
+
+
+    return df
+
 def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     """Get all water chemistry data for the specified project ID and date range.
     Args:
@@ -638,6 +671,9 @@ def get_projects(token=None):
     df.reset_index(inplace=True, drop=True)
 
     return df
+
+
+
 
 
 def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
@@ -779,3 +815,5 @@ def get_station_types(token = None):
     df.sort_values(["text"], inplace=True)
     df.reset_index(inplace=True, drop=True)
     return df
+
+
