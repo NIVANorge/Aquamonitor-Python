@@ -542,6 +542,71 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
     if "Flag" not in df.columns:
         df["Flag"] = None
 
+    columns_to_drop = [
+        '$type', 'Id', 'Approved', 'Sample.Method.Code', 'QuantificationLimit',
+        'Accredited', 'Accreditation', 'Sample.Method.Id', 'Flag', 'Remark', 'Method.Id'
+    ]
+
+    # Drop the specified columns, ignoring any that are not in the DataFrame
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+
+    df.rename(columns = {
+        "Sample.Id": "sample_id",
+        "Sample.Station.Project.Id": "project_id",
+        "Sample.Station.Project.Name": "project_name",
+        "Sample.Station.Id": "station_id",
+        "Sample.Station.Code": "station_code",
+        "Sample.Station.Name": "station_name",
+        "Sample.SampleDate": "sample_date",
+        "Sample.Depth1": "depth1",
+        "Sample.Depth2": "depth2",
+        "Parameter.Name": "parameter_name",
+        "Method.Name": "parameter_name",
+        'Method.Unit': 'method_unit',
+        'Method.Laboratory' : "method_laboratory",
+        'Method.MethodRef': "method_ref",
+        "Value": "value",
+        "Parameter.Unit": "parameter_unit"
+    }, inplace = True)
+
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
+
+    df = df.reindex(df.columns.union(["project_id",
+            "project_name",
+            "station_id",
+            "station_code",
+            "station_name",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+            "flag",
+            "value",
+            "method_unit"   
+        ], sort= False), axis="columns")
+
+    df.sort_values(
+        [
+            "project_id",
+            "station_id",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+        ],
+        inplace=True,
+    )
+    df.reset_index(inplace=True, drop=True)
+
+    nans = df.parameter_name.isna()
+    if nans.any():
+        empty_names = df[nans]
+        print("Rows with empty 'parameter_name' values:")
+        print(empty_names)
+        df = df[~nans]
+
 
     return df
 
@@ -619,6 +684,42 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     df.reset_index(inplace=True, drop=True)
 
     return df
+
+def long_to_wide(df_long):
+    """ Converts into a wide format df from get_project_chemistry_input """
+    d = df_long[df_long.duplicated(
+        subset=[
+            "parameter_name",
+            "sample_date",
+            "project_name",
+            "station_name",
+            "project_id",
+            "station_id",
+            "station_code",
+            "depth1",
+            "depth2",
+        ],
+        keep=False,
+    )]
+    if len(d) > 0:
+        raise ValueError("Found duplicated data")
+    else:
+        df_wide = df.pivot(
+                columns=["parameter_name"],
+                index=[
+                    "sample_date",
+                    "project_name",
+                    "station_name",
+                    "project_id",
+                    "station_id",  # 'unit',
+                    "station_code",
+                    "depth1",
+                    "depth2",
+                ],
+                values="value",
+            )
+    return df_wide
+
 
 def extract_o_numbers(row):
     """Return a commaseparated list of o-numbers.
