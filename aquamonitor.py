@@ -543,7 +543,7 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
         df["Flag"] = None
 
     columns_to_drop = [
-        '$type', 'Id', 'Approved', 'Sample.Method.Code', 'QuantificationLimit',
+        '$type', 'Id', 'Sample.Method.Code', 'QuantificationLimit',
         'Accredited', 'Accreditation', 'Sample.Method.Id', 'Flag', 'Remark', 'Method.Id'
     ]
 
