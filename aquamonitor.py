@@ -512,6 +512,104 @@ class Graph:
                     file.write(chunk)
 
 
+def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None):
+    """Get all water chemistry data for the specified project ID and date range.
+    Args:
+        proj_id:  Int.
+        st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
+        end_dt:   Str. End of period of interest in format 'dd.mm.yyyy'
+        token:    Str. Optional. Valid API access token. If None, will first attempt to read
+                  credentials from a '.auth' file in the installation folder. If this fails,
+                  will prompt for username and password
+        n_jobs:   None or int. Number of threads to use for fetching query results in
+                  parallel. If None (default) the number of threads is equal to the number
+                  of pages in the server response, which is usually a sensible choice
+    Returns:
+        Dataframe.
+    """
+    if not token:
+        token = login()
+
+    # Query API and save result-set to cache
+    where = (
+        f"project_id = {proj_id} and sample_date >= {st_dt} and sample_date <= {end_dt}"
+    )
+    table = "water_chemistry_input"
+    query = Query(where=where, token=token, table=table)
+
+    df = query.getDataFrame(n_jobs)
+
+    if "Flag" not in df.columns:
+        df["Flag"] = None
+
+    columns_to_drop = [
+        '$type', 'Id', 'Sample.Method.Code', 'QuantificationLimit',
+        'Accredited', 'Accreditation', 'Sample.Method.Id', 'Flag', 'Remark', 'Method.Id'
+    ]
+
+    # Drop the specified columns, ignoring any that are not in the DataFrame
+    df = df.drop(columns=columns_to_drop, errors='ignore')
+
+
+    df.rename(columns = {
+        "Sample.Id": "sample_id",
+        "Sample.Station.Project.Id": "project_id",
+        "Sample.Station.Project.Name": "project_name",
+        "Sample.Station.Id": "station_id",
+        "Sample.Station.Code": "station_code",
+        "Sample.Station.Name": "station_name",
+        "Sample.SampleDate": "sample_date",
+        "Sample.Depth1": "depth1",
+        "Sample.Depth2": "depth2",
+        "Parameter.Name": "parameter_name",
+        "Method.Name": "parameter_name",
+        'Method.Unit': 'method_unit',
+        'Method.Laboratory' : "method_laboratory",
+        'Method.MethodRef': "method_ref",
+        "Value": "value",
+        "Parameter.Unit": "parameter_unit"
+    }, inplace = True)
+
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
+
+    df = df.reindex(df.columns.union(["project_id",
+            "project_name",
+            "station_id",
+            "station_code",
+            "station_name",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+            "flag",
+            "value",
+            "method_unit"   
+        ], sort= False), axis="columns")
+
+    df.sort_values(
+        [
+            "project_id",
+            "station_id",
+            "sample_date",
+            "depth1",
+            "depth2",
+            "parameter_name",
+        ],
+        inplace=True,
+    )
+    df.reset_index(inplace=True, drop=True)
+
+    nans = df.parameter_name.isna()
+    if nans.any():
+        empty_names = df[nans]
+        print("Rows with empty 'parameter_name' values:")
+        print(empty_names)
+        df = df[~nans]
+
+
+    return df
+
 def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     """Get all water chemistry data for the specified project ID and date range.
     Args:
@@ -587,6 +685,42 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
 
     return df
 
+def long_to_wide(df_long):
+    """ Converts into a wide format df from get_project_chemistry_input """
+    d = df_long[df_long.duplicated(
+        subset=[
+            "parameter_name",
+            "sample_date",
+            "project_name",
+            "station_name",
+            "project_id",
+            "station_id",
+            "station_code",
+            "depth1",
+            "depth2",
+        ],
+        keep=False,
+    )]
+    if len(d) > 0:
+        raise ValueError("Found duplicated data")
+    else:
+        df_wide = df_long.pivot(
+                columns=["parameter_name"],
+                index=[
+                    "sample_date",
+                    "project_name",
+                    "station_name",
+                    "project_id",
+                    "station_id",  # 'unit',
+                    "station_code",
+                    "depth1",
+                    "depth2",
+                ],
+                values="value",
+            )
+    return df_wide
+
+
 def extract_o_numbers(row):
     """Return a commaseparated list of o-numbers.
        Based on the json structure: O_Numbers[{Id, Number}]
@@ -638,6 +772,9 @@ def get_projects(token=None):
     df.reset_index(inplace=True, drop=True)
 
     return df
+
+
+
 
 
 def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
@@ -779,3 +916,5 @@ def get_station_types(token = None):
     df.sort_values(["text"], inplace=True)
     df.reset_index(inplace=True, drop=True)
     return df
+
+
