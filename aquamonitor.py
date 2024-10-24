@@ -702,8 +702,31 @@ def long_to_wide(df_long):
         keep=False,
     )]
     if len(d) > 0:
-        raise ValueError("Found duplicated data")
-    else:
+
+        print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0]}, keeping last processed")
+
+        df_long = df_long.sort_values(by=["parameter_name",
+                                        "project_name",
+                                        "station_name",
+                                        "project_id",
+                                        "station_id",
+                                        "station_code",
+                                        "depth1",
+                                        "depth2",
+                                        "sample_date"])
+        df_long = df_long.drop_duplicates(
+            subset=[
+                "parameter_name",
+                "sample_date",
+                "project_name",
+                "station_name",
+                "project_id",
+                "station_id",
+                "station_code",
+                "depth1",
+                "depth2"], keep="last")
+
+
         df_wide = df_long.pivot(
                 columns=["parameter_name"],
                 index=[
