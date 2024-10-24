@@ -604,7 +604,7 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
     if nans.any():
         empty_names = df[nans]
         print("Rows with empty 'parameter_name' values:")
-        print(empty_names)
+        print(empty_names['sample_date'].values)
         df = df[~nans]
 
 
@@ -687,6 +687,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
 
 def long_to_wide(df_long):
     """ Converts into a wide format df from get_project_chemistry_input """
+    units = df_long[['parameter_name', 'method_unit']].drop_duplicates()
     d = df_long[df_long.duplicated(
         subset=[
             "parameter_name",
