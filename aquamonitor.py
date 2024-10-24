@@ -744,7 +744,7 @@ def long_to_wide(df_long):
             values="value",
         )
         
-    return df_wide
+    return df_wide, units
 
 
 def extract_o_numbers(row):
