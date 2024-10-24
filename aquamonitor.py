@@ -701,6 +701,7 @@ def long_to_wide(df_long):
         ],
         keep=False,
     )]
+
     if len(d) > 0:
 
         print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0]}, keeping last processed")
@@ -727,20 +728,21 @@ def long_to_wide(df_long):
                 "depth2"], keep="last")
 
 
-        df_wide = df_long.pivot(
-                columns=["parameter_name"],
-                index=[
-                    "sample_date",
-                    "project_name",
-                    "station_name",
-                    "project_id",
-                    "station_id",  # 'unit',
-                    "station_code",
-                    "depth1",
-                    "depth2",
-                ],
-                values="value",
-            )
+    df_wide = df_long.pivot(
+            columns=["parameter_name"],
+            index=[
+                "sample_date",
+                "project_name",
+                "station_name",
+                "project_id",
+                "station_id",  # 'unit',
+                "station_code",
+                "depth1",
+                "depth2",
+            ],
+            values="value",
+        )
+        
     return df_wide
 
 
