@@ -41,4 +41,4 @@ AquaMonitor API is using the same users and privileges as AquaMonitor. Meaning t
 
 External users would also have access, but for a limited set of stations.
 
-See also the `examples` folder and the Jupyter notebook [here](https://nbviewer.org/github/NIVANorge/Aquamonitor-Python/blob/master/examples/query_chem.ipynb).
+See also the `examples` folder and the Jupyter notebook [here](https://nbviewer.org/github/NIVANorge/Aquamonitor-Python/blob/main/examples/query_chem.ipynb).
