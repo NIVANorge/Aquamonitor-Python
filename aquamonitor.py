@@ -376,10 +376,7 @@ class Query:
                 while not resp["Result"]["Ready"]:
                     time.sleep(1)
                     resp = getJson(self.token, cache_site + "/query/" + self.key)
-                if self.table is None:
-                    self.result = resp["Result"]
-                else:
-                    self.checkTable()
+                self.result = resp["Result"]
         else:
             raise Exception("Query didn't respond properly.")
 
