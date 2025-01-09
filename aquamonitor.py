@@ -921,4 +921,52 @@ def get_station_types(token = None):
     df.reset_index(inplace=True, drop=True)
     return df
 
+def get_water_samples(token = None, proj_id = None, stat_ids = None, from_date = None, to_date = None):
+    """Get list of water samples.
+        Project or an array of stations must be provided. A period can be provided in addition.
+    Args:
+    token: User credentials. If not specified will try to get them.
+           User must have access rights to the project or stations.
+    proj_id: Project Id. If provided will use stations of the project.
+    stat_ids: Array of station Id. proj_id can't be given together with stations.
+    from_date: Start of period
+    to_date: End of period
+    """
 
+    if proj_id is None and stat_ids is None:
+        raise Exception("You must provide either proj_id or stat_ids.")
+    
+    if token is None:
+        token = login()
+
+    where = None
+    if not proj_id is None:
+        where = "project_id=" + proj_id
+
+    if not from_date is None:
+        if not where is None:
+            where += " and sample_date>" + from_date
+        else:
+            where = "sample_date>" + from_date
+    
+    if not to_date is None:
+        if not where is None:
+            where += " and sample_date<" + to_date
+        else:
+            where = "sample_date>" + to_date
+    
+    query = Query(stations=stat_ids, where=where, token=token, table="water_samples")
+    df = query.getDataFrame()
+    df.rename(columns = {
+        "Id": "sample_id",
+        "Station.Id": "station_id",
+        "SampleDate": "sample_date",
+        "Depth1": "depth1",
+        "Depth2": "depth2"
+    }, inplace = True)
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
+    df = df[["sample_id", "station_id", "sample_date", "depth1", "depth2"]]
+    df.reset_index(inplace=True, drop=True)
+
+    return df
