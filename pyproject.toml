@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "aquamonitor"
+version = "0.4.0"
+description = "Python scripts to access Nivabasen"
+authors = ["Roar Brænden <roar.branden@niva.no>"]
+license = "GPL-3.0"
+readme = "README.md"
+homepage = "https://github.com/NIVANorge/Aquamonitor-Python"
+repository = "https://github.com/NIVANorge/Aquamonitor-Python"
+keywords = ["Nivabasen", "Python"]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+joblib = ">=1.4.0"
+pandas = ">=2.2.0"
+requests = ">=2.32.0"
+yaspin = ">=2.5.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
