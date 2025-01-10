@@ -938,19 +938,19 @@ def get_water_samples(token = None, proj_id = None, stat_ids = None, from_date =
 
     where = None
     if not proj_id is None:
-        where = "project_id=" + proj_id
+        where = "project_id=" + str(proj_id)
 
     if not from_date is None:
         if not where is None:
-            where += " and sample_date>" + from_date
+            where += " and sample_date>" + str(from_date)
         else:
-            where = "sample_date>" + from_date
+            where = "sample_date>" + str(from_date)
     
     if not to_date is None:
         if not where is None:
-            where += " and sample_date<" + to_date
+            where += " and sample_date<" + str(to_date)
         else:
-            where = "sample_date>" + to_date
+            where = "sample_date>" + str(to_date)
     
     query = Query(stations=stat_ids, where=where, token=token, table="water_samples")
     df = query.getDataFrame()
@@ -964,6 +964,62 @@ def get_water_samples(token = None, proj_id = None, stat_ids = None, from_date =
 
     df["sample_date"] = pd.to_datetime(df["sample_date"])
     df = df[["sample_id", "station_id", "sample_date", "depth1", "depth2"]]
+    df.reset_index(inplace=True, drop=True)
+
+    return df
+
+def get_biota_samples(token = None, proj_id = None, stat_ids = None, from_date = None, to_date = None):
+    """Get list of biota samples.
+        Project or an array of stations must be provided. A period can be provided in addition.
+    Args:
+    token: User credentials. If not specified will try to get them.
+           User must have access rights to the project or stations.
+    proj_id: Project Id. If provided will use stations of the project.
+    stat_ids: Array of station Id. proj_id can't be given together with stations.
+    from_date: Start of period
+    to_date: End of period
+    """
+
+    if proj_id is None and stat_ids is None:
+        raise Exception("You must provide either proj_id or stat_ids.")
+
+    if token is None:
+        token = login()
+
+    where = None
+    if not proj_id is None:
+        where = "project_id=" + str(proj_id)
+
+    if not from_date is None:
+        if not where is None:
+            where += " and sample_date>" + str(from_date)
+        else:
+            where = "sample_date>" + str(from_date)
+
+    if not to_date is None:
+        if not where is None:
+            where += " and sample_date<" + str(to_date)
+        else:
+            where = "sample_date>" + str(to_date)
+
+    query = Query(stations=stat_ids, where=where, token=token, table="biota_samples")
+    df = query.getDataFrame()
+    df.rename(columns = {
+        "Id": "sample_id",
+        "Station.Id": "station_id",
+        "SampleDate": "sample_date",
+        "Tissue.Id": "tissue_id",
+        "Tissue.Code": "tissue_code",
+        "Tissue.Name": "tissue",
+        "Taxon.Id": "taxon_id",
+        "Taxon.Code": "taxon_code",
+        "Taxon.Name": "taxon",
+        "RepNo": "rep_no"
+    }, inplace = True)
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
+    df = df[["sample_id", "station_id", "sample_date", "tissue_id", "tissue_code", "tissue", "taxon_id", 
+             "taxon_code", "taxon", "rep_no"]]
     df.reset_index(inplace=True, drop=True)
 
     return df
