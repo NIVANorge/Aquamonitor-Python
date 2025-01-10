@@ -1023,3 +1023,62 @@ def get_biota_samples(token = None, proj_id = None, stat_ids = None, from_date =
     df.reset_index(inplace=True, drop=True)
 
     return df
+
+def get_sediment_samples(token = None, proj_id = None, stat_ids = None, from_date = None, to_date = None):
+    """Get sediment samples.
+       Project or an array of stations must be provided. A period can be provided in addition.
+    Args:
+    token: User credentials. If not specified will try to get them.
+           User must have access rights to the project or stations.
+    proj_id: Project Id. If provided will use stations of the project.
+    stat_ids: Array of station Id. proj_id can't be given together with stations.
+    from_date: Start of period
+    to_date: End of period
+    """
+
+    if proj_id is None and stat_ids is None:
+        raise Exception("You must provide either proj_id or stat_ids.")
+
+    if token is None:
+        token = login()
+
+    where = None
+    if not proj_id is None:
+        where = "project_id=" + str(proj_id)
+
+    if not from_date is None:
+        if not where is None:
+            where += " and sample_date>" + str(from_date)
+        else:
+            where = "sample_date>" + str(from_date)
+
+    if not to_date is None:
+        if not where is None:
+            where += " and sample_date<" + str(to_date)
+        else:
+            where = "sample_date>" + str(to_date)
+
+    query = Query(stations=stat_ids, where=where, token=token, table="sediment_samples")
+    df = query.getDataFrame()
+    if "WaterDepth" not in df.columns:
+        df["WaterDepth"] = None
+    
+    df.rename(columns = {
+        "Id": "sample_id",
+        "SliceId": "slice_id",
+        "Station.Id": "station_id",
+        "SampleDate": "sample_date",
+        "SampleTag": "sample_tag",
+        "Depth1": "depth1",
+        "Depth2": "depth2",
+        "Method.Id": "method_id",
+        "Method.Code": "method_code",
+        "WaterDepth": "water_depth"
+    }, inplace = True)
+
+    df["sample_date"] = pd.to_datetime(df["sample_date"])
+    df = df[["sample_id", "slice_id", "station_id", "sample_date", "sample_tag", "depth1", "depth2", 
+             "method_id", "method_code", "water_depth"]]
+    df.reset_index(inplace=True, drop=True)
+
+    return df
