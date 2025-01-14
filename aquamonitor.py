@@ -19,6 +19,7 @@ aqua_site = "AquaServices"
 api_site = "AquaServices"
 archive_site = "AquaServices"
 cache_site = "AquaCache"
+lab_site = "Admin"
 
 
 def requestService(url, params):
@@ -1081,4 +1082,47 @@ def get_sediment_samples(token = None, proj_id = None, stat_ids = None, from_dat
              "method_id", "method_code", "water_depth"]]
     df.reset_index(inplace=True, drop=True)
 
+    return df
+
+def get_lab_samples(proj_id, token = None):
+    """Get samples from Labware with Nivadatabase project_id.
+    Args:
+        proj_id: Project_id from Nivadatabase.
+        token: User credentials. If not specified will try to get them.
+               No specific requirement to the user.
+    """
+
+    if token is None:
+        token = login()
+
+    resp = getJson(token, lab_site + "/lab/api/samples/query?projectId=" + str(proj_id))
+    df = json_normalize(resp)
+
+    # Tidy
+    df.rename(
+        {
+            "SampleNumber": "sample_number",
+            "TextId": "text_id",
+            "Status": "status",
+            "ChangedOn": "changed_on",
+            "SampleType": "sample_type",
+            "SampledDate": "sampled_date",
+            "Description": "description",
+            "ProjectStationId": "projects_stations_id",
+            "SampleDepthUpper": "depth1",
+            "SampleDepthLower": "depth2",
+            "SliceDepth1": "slice_depth1",
+            "SliceDepth2": "slice_depth2",
+            "SampleTag": "sample_tag",
+            "SamplingMethodId": "method_id",
+            "SpeciesId": "taxon_id",
+            "TissueId": "tissue_id",
+            "BiotaSampleNo": "biota_sample_no",
+            "BiotaSpecies": "biota_species"
+        },
+        inplace=True,
+        axis="columns",
+        errors="ignore"
+    )
+    df.reset_index(inplace=True, drop=True)
     return df
