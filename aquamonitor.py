@@ -716,17 +716,20 @@ def long_to_wide(df_long):
                                         "depth1",
                                         "depth2",
                                         "sample_date"])
-        df_long = df_long.drop_duplicates(
-            subset=[
-                "parameter_name",
-                "sample_date",
-                "project_name",
-                "station_name",
-                "project_id",
-                "station_id",
-                "station_code",
-                "depth1",
-                "depth2"], keep="last")
+        if len(d) > 0:
+            print (f"Found duplicates in Aqm for {df_long}, keeping last processed")
+            df_long = df_long.drop_duplicates(
+                subset=[
+                    "parameter_name",
+                    "sample_date",
+                    "project_name",
+                    "station_name",
+                    "project_id",
+                    "station_id",
+                    "station_code",
+                    "depth1",
+                    "depth2"], keep="last")
+
 
 
     df_wide = df_long.pivot(
