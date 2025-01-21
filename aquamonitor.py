@@ -705,7 +705,7 @@ def long_to_wide(df_long):
 
     if len(d) > 0:
 
-        print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0]}, keeping last processed")
+        print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0], d}, keeping last processed")
 
         df_long = df_long.sort_values(by=["parameter_name",
                                         "project_name",
@@ -717,7 +717,6 @@ def long_to_wide(df_long):
                                         "depth2",
                                         "sample_date"])
         if len(d) > 0:
-            print (f"Found duplicates in Aqm for {df_long}, keeping last processed")
             df_long = df_long.drop_duplicates(
                 subset=[
                     "parameter_name",
