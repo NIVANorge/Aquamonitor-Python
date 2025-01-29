@@ -704,7 +704,8 @@ def long_to_wide(df_long):
 
     if len(d) > 0:
         print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0], d}")       
-        return None, None
+        raise ValueError("Found duplicated data")
+
 
 
     df_wide = df_long.pivot(
