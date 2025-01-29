@@ -549,7 +549,7 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
     # Drop the specified columns, ignoring any that are not in the DataFrame
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
-
+    print (f"water_chemistry_input func result: {df.columns}")
     df.rename(columns = {
         "Sample.Id": "sample_id",
         "Sample.Station.Project.Id": "project_id",
