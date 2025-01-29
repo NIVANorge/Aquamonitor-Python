@@ -511,7 +511,6 @@ class Graph:
                 for chunk in response.iter_content():
                     file.write(chunk)
 
-
 def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     """Get all water chemistry data for the specified project ID and date range.
     Args:
@@ -704,31 +703,8 @@ def long_to_wide(df_long):
     )]
 
     if len(d) > 0:
-
-        print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0], d}, keeping last processed")
-
-        df_long = df_long.sort_values(by=["parameter_name",
-                                        "project_name",
-                                        "station_name",
-                                        "project_id",
-                                        "station_id",
-                                        "station_code",
-                                        "depth1",
-                                        "depth2",
-                                        "sample_date"])
-        if len(d) > 0:
-            df_long = df_long.drop_duplicates(
-                subset=[
-                    "parameter_name",
-                    "sample_date",
-                    "project_name",
-                    "station_name",
-                    "project_id",
-                    "station_id",
-                    "station_code",
-                    "depth1",
-                    "depth2"], keep="last")
-
+        print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0], d}")       
+        return None, None
 
 
     df_wide = df_long.pivot(
