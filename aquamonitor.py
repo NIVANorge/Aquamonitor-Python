@@ -549,7 +549,6 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
     # Drop the specified columns, ignoring any that are not in the DataFrame
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
-    print (f"water_chemistry_input func result: {df.columns}")
     df.rename(columns = {
         "Sample.Id": "sample_id",
         "Sample.Station.Project.Id": "project_id",
@@ -560,13 +559,12 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
         "Sample.SampleDate": "sample_date",
         "Sample.Depth1": "depth1",
         "Sample.Depth2": "depth2",
-        "Parameter.Name": "parameter_name",
         "Method.Name": "parameter_name",
         'Method.Unit': 'method_unit',
         'Method.Laboratory' : "method_laboratory",
         'Method.MethodRef': "method_ref",
         "Value": "value",
-        "Parameter.Unit": "parameter_unit"
+
     }, inplace = True)
 
 
@@ -686,6 +684,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
 
 def long_to_wide(df_long):
     """ Converts into a wide format df from get_project_chemistry_input """
+    
     units = df_long[['parameter_name', 'method_unit']].drop_duplicates()
     d = df_long[df_long.duplicated(
         subset=[
