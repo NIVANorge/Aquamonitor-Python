@@ -511,7 +511,6 @@ class Graph:
                 for chunk in response.iter_content():
                     file.write(chunk)
 
-
 def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None):
     """Get all water chemistry data for the specified project ID and date range.
     Args:
@@ -550,7 +549,6 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
     # Drop the specified columns, ignoring any that are not in the DataFrame
     df = df.drop(columns=columns_to_drop, errors='ignore')
 
-
     df.rename(columns = {
         "Sample.Id": "sample_id",
         "Sample.Station.Project.Id": "project_id",
@@ -561,13 +559,12 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
         "Sample.SampleDate": "sample_date",
         "Sample.Depth1": "depth1",
         "Sample.Depth2": "depth2",
-        "Parameter.Name": "parameter_name",
         "Method.Name": "parameter_name",
         'Method.Unit': 'method_unit',
         'Method.Laboratory' : "method_laboratory",
         'Method.MethodRef': "method_ref",
         "Value": "value",
-        "Parameter.Unit": "parameter_unit"
+
     }, inplace = True)
 
 
@@ -604,7 +601,7 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None)
     if nans.any():
         empty_names = df[nans]
         print("Rows with empty 'parameter_name' values:")
-        print(empty_names)
+        print(empty_names['sample_date'].values)
         df = df[~nans]
 
 
@@ -687,6 +684,8 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
 
 def long_to_wide(df_long):
     """ Converts into a wide format df from get_project_chemistry_input """
+    
+    units = df_long[['parameter_name', 'method_unit']].drop_duplicates()
     d = df_long[df_long.duplicated(
         subset=[
             "parameter_name",
@@ -701,24 +700,29 @@ def long_to_wide(df_long):
         ],
         keep=False,
     )]
+
     if len(d) > 0:
+        print(f"Warning: found duplicates in Aqm for {df_long.project_name.values[0], d}")       
         raise ValueError("Found duplicated data")
-    else:
-        df_wide = df_long.pivot(
-                columns=["parameter_name"],
-                index=[
-                    "sample_date",
-                    "project_name",
-                    "station_name",
-                    "project_id",
-                    "station_id",  # 'unit',
-                    "station_code",
-                    "depth1",
-                    "depth2",
-                ],
-                values="value",
-            )
-    return df_wide
+
+
+
+    df_wide = df_long.pivot(
+            columns=["parameter_name"],
+            index=[
+                "sample_date",
+                "project_name",
+                "station_name",
+                "project_id",
+                "station_id",  # 'unit',
+                "station_code",
+                "depth1",
+                "depth2",
+            ],
+            values="value",
+        )
+        
+    return df_wide, units
 
 
 def extract_o_numbers(row):
