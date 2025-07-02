@@ -10,7 +10,8 @@ Aquamonitor-Python is pre-installed on [NIVA's JupyterHub](https://hub.p.niva.no
     
 ## Quick start
 
-``` python
+```python
+
 import aquamonitor as am
 
 # Get access token.
@@ -36,7 +37,9 @@ end_dt = "31.12.2019"
 df = am.get_project_chemistry(proj_id, st_dt, end_dt, token=token, approved=True)
 print(df.head())
 ```
+
 ## Authorisation
+
 AquaMonitor API is using the same users and privileges as AquaMonitor. Meaning that as an internal NIVA user you can use your own username / password and get access to all stations.
 
 External users would also have access, but for a limited set of stations.

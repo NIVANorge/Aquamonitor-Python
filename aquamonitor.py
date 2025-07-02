@@ -178,12 +178,24 @@ class Query:
     result = None
     selectedStations = None
 
-    def __init__(self, where=None, token=None, stations=None, key=None, table=None):
+    def __init__(self, where=None, token=None, stations=None, key=None, table=None, geography=None):
+        """Initializes a Query object.
+        Args:
+            token: A valid AquaMonitor API access token. If None, the login function will be called to obtain one.
+            key: A string that identifies the query. If None, a new query will be created.
+            table: A string that specifies the table to query. If None, the query will return just the stations ids.
+            where: A string that complies with the AquaMonitor query syntax.
+            stations: A list of station ids to include in the query. If None, stations will be selected based on user admission.
+            geography: An object that specifies a geographical area to query within.
+                            Should be a dict with keys: "Layer", "FieldName" and "TextValue".
+        """
+
         self.where = where
         self.token = token
         self.selectedStations = stations
         self.key = key
         self.table = table
+        self.geography = geography
 
     def createQuery(self):
         if self.token is None:
@@ -195,6 +207,8 @@ class Query:
             query["Where"] = self.where
         if self.selectedStations is not None:
             query["SelectedStations"] = self.selectedStations
+        if self.geography is not None:
+            query["GivenByGeography"] = self.geography
         resp = postJson(self.token, cache_site + "/query/", query)
         if resp.get("Key") is None:
             raise Exception("Couldn't create query. Response: " + str(resp))
@@ -204,8 +218,9 @@ class Query:
     def readQuery(self):
         resp = getJson(self.token, cache_site + "/query/" + self.key)
         self.table = resp["Query"]["From"][0]["Table"]
-        self.selectedStations = resp["Query"]["SelectedStations"]
-        self.where = resp["Query"]["Where"]
+        self.selectedStations = resp["Query"].get("SelectedStations")
+        self.where = resp["Query"].get("Where")
+        self.geography = resp["Query"].get("GivenByGeography")
         self.result = resp["Result"]
 
     def list(self):
