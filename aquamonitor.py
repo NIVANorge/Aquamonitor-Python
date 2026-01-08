@@ -533,9 +533,7 @@ def get_project_chemistry_input(proj_id, st_dt, end_dt, token=None, n_jobs=None,
         st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
         end_dt:   Str. End of period of interest in format 'dd.mm.yyyy'
         station_ids: List of station ids
-        token:    Str. Optional. Valid API access token. If None, will first attempt to read
-                  credentials from a '.auth' file in the installation folder. If this fails,
-                  will prompt for username and password
+        token:    Str. Optional. Valid API access token. If not specified will try to get them.
         n_jobs:   None or int. Number of threads to use for fetching query results in
                   parallel. If None (default) the number of threads is equal to the number
                   of pages in the server response, which is usually a sensible choice
@@ -633,9 +631,7 @@ def get_project_chemistry(proj_id, st_dt, end_dt, token=None, n_jobs=None):
         proj_id:  Int.
         st_dt:    Str. Start of period of interest in format 'dd.mm.yyyy'
         end_dt:   Str. End of period of interest in format 'dd.mm.yyyy'
-        token:    Str. Optional. Valid API access token. If None, will first attempt to read
-                  credentials from a '.auth' file in the installation folder. If this fails,
-                  will prompt for username and password
+        token:    Str. Optional. Valid API access token. If not specified will try to get them.
         n_jobs:   None or int. Number of threads to use for fetching query results in
                   parallel. If None (default) the number of threads is equal to the number
                   of pages in the server response, which is usually a sensible choice
@@ -758,11 +754,10 @@ def extract_o_numbers(row):
 
 def get_projects(token=None):
     """Get full list of projects in the Nivadatabase/Aquamonitor.
+       Dataframe includes project ID, code (O-numbers), name and description.
 
     Args:
-        token: Str. Optional. Valid API access token. If None, will first attempt to read
-               credentials from a '.auth' file in the installation folder. If this fails,
-               will prompt for username and password
+        token: Str. Optional. Valid API access token. If not specified will try to get them.
 
     Returns:
         Dataframe
@@ -803,12 +798,12 @@ def get_projects(token=None):
 
 def get_project_stations(proj_id, token=None, return_coords=True, n_jobs=None):
     """Get stations associated with a specific project.
+       Dataframe includes station ID, code, name and type.
+       If return_coords is True, latitudes and longitudes are also included.
 
     Args:
         proj_id:       Int. Project ID for project of interest
-        token:         Str. Optional. Valid API access token. If None, will first attempt to read
-                       credentials from a '.auth' file in the installation folder. If this fails,
-                       will prompt for username and password
+        token:         Str. Optional. Valid API access token. If not specified will try to get them.
         return_coords: Bool. Whether to include latitudes and longitudes for stations in the result.
                        Default True. Setting to False will make the query significantly faster
         n_jobs:        None or int. Number of threads to use for fetching query results in
@@ -940,5 +935,3 @@ def get_station_types(token = None):
     df.sort_values(["text"], inplace=True)
     df.reset_index(inplace=True, drop=True)
     return df
-
-
