@@ -13,7 +13,7 @@ where = "Water.parameter_id=11"
 
 ## We define the geography from looking into Geoserver.
 geography = {
-    "layer": "no.niva:nve_vassdragomr_f",
+    "layer": "aquamonitor:nve_vassdragomr_f",
     "fieldName": "vassomrnr",
     "textValue": "002"
 }
