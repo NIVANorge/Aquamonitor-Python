@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aquamonitor"
-version = "0.4.4"
+version = "0.4.5"
 description = "Python scripts to access Nivabasen through AquaMonitor API."
 authors = ["Roar Brænden <roar.branden@niva.no>"]
 license = "GPL-3.0"
